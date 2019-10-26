@@ -1,0 +1,8 @@
+# config
+websocket:
+    address: "localhost"
+    port: 7071
+    path: "ws"
+telnet:
+    host: "localhost"
+    port: 5566
