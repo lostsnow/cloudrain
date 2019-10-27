@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/lostsnow/cloudrain/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -39,8 +40,21 @@ func initConfig() {
 
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Printf("Using config file: %v\n", viper.ConfigFileUsed())
+		initLogger()
 	} else {
 		fmt.Println(err)
-		os.Exit(-1)
+		os.Exit(1)
+	}
+}
+
+func initLogger() {
+	l := viper.Sub("log")
+
+	if l != nil {
+		if err := logger.NewLogger(l, logger.InstanceZapLogger); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		logger.Info("Logger initialized")
 	}
 }
