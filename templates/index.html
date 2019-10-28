@@ -1,16 +1,17 @@
 {{ block "header.html" . }}{{ end }}
 
-<div class="panel-body col-lg-offset-3 col-lg-6">
-    <h1>CloudRain &#128045;</h1>
-    <div class="row-fluid">
-        <div class="span12 well">
-            <div id="historyBox">
-                <!-- Messages will be inserted here. -->
-            </div>
+<div class="play">
+    <div class="window">
+        <div id="historyBox" class="terminal">
+            <!-- Messages will be inserted here. -->
         </div>
-    </div>
-    <div>
-        <textarea id="textBox" class="form-control" rows="2" autofocus></textarea>
+        <div class="prompt">
+            <div class="connection">
+                <i class="fa fa-circle green" title="Disconnected"></i>
+            </div>
+            <input id="textBox" type="text" class="form-control" autocorrect="off" autocapitalize="off" autofocus
+                   spellcheck="false" value=""/>
+        </div>
     </div>
 </div>
 

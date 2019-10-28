@@ -4,7 +4,7 @@ if (!Tomato) var Tomato = {};
 Tomato.websocket = function (options) {
     function showMessage(msg) {
         var historyBox = options.historyBox;
-        var atBottom = (historyBox.scrollTop() >= historyBox[0].scrollHeight - historyBox.height());
+        var atBottom = (historyBox.scrollTop() + 40 >= historyBox[0].scrollHeight - historyBox.height());
         historyBox.append(msg);
         // If we were scrolled to the bottom before this call, remain there.
         if (atBottom) {
@@ -25,7 +25,7 @@ Tomato.websocket = function (options) {
     jQuery(function () {
         // Check for websocket availability.
         if (!("WebSocket" in window)) {
-            showMessage("Sorry. RatChat requires a browser with WebSockets support.");
+            showMessage("Requires a browser with WebSockets support.");
             return;
         }
 
@@ -53,7 +53,7 @@ Tomato.websocket = function (options) {
         options.textBox.keyup(function (e) {
             if (e.keyCode === 13) {
                 if (!e.shiftKey) {
-                    var content = this.value;
+                    var content = this.value + "\n";
                     try {
                         showMessage(escapeHtml(content));
                         socket.send(content);

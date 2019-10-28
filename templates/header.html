@@ -14,55 +14,138 @@
     <title>CloudRain</title>
 
     <!-- Get some nice monospace fonts -->
-    <link href='//fonts.googleapis.com/css?family=Inconsolata:400,700|Anonymous+Pro:400,700' rel='stylesheet'
-          type='text/css'>
+    <link href="//fonts.googleapis.com/css?family=Inconsolata:400,700|Anonymous+Pro:400,700" rel="stylesheet">
 
     <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Optional theme -->
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap-theme.min.css">
+    <link href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" rel="stylesheet"
+          integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
 
-    <!-- Solarized color Theme for bootstrap from https://github.com/aalpern/bootstrap-solarized -->
-    <link rel="stylesheet" href="static/css/bootstrap-solarized-dark.css">
-
-    <!-- Less ugly scrollbars. -->
     <style>
-
-        #historyBox::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+        button, input, optgroup, select, textarea {
+            margin: 0;
+            font-family: inherit;
+            font-size: inherit;
+            line-height: inherit;
         }
 
-        #historyBox::-webkit-scrollbar-track {
-            -webkit-box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.3);
-            -webkit-border-radius: 5px;
-            border-radius: 5px;
+        button, input {
+            overflow: visible;
         }
 
-        #historyBox::-webkit-scrollbar-thumb {
-            -webkit-border-radius: 5px;
-            border-radius: 5px;
-            background: rgb(0, 43, 54);
-            -webkit-box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.5);
+        body {
+            color: #1a2837;
         }
 
-        #historyBox::-webkit-scrollbar-thumb:window-inactive {
-            background: rgb(0, 43, 54);
+        .navbar {
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding: .5rem 1rem;
+            background-color: #000;
+            border-radius: 0;
         }
 
-        #historyBox {
-            font-family: "Inconsolata", monospace;
-            min-height: 480px;
-            max-height: 480px;
-            overflow: auto;
+        .navbar-expand-md {
+            flex-flow: row nowrap;
+            -ms-flex-pack: start;
+            justify-content: flex-start;
+        }
+
+        .navbar-brand {
+            display: inline-block;
+            padding: 3px 0;
+            font-size: 32px;
+            line-height: inherit;
+            white-space: nowrap;
+            color: #c3cbd5;
+        }
+
+        .navbar-brand:hover {
+            color: #c3cbd5;
+        }
+
+        .play {
+            border-top: 2px solid #495869;
+            width: 100%;
+            position: absolute;
+            top: 58px;
+            bottom: 0;
+        }
+
+        .play .window {
+            display: flex;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .play .terminal {
+            width: 100%;
+            padding: 16px;
+            flex-grow: 1;
+            overflow-y: scroll;
+            background-color: #000;
+            color: #c3cbd5;
             white-space: pre-wrap;
+            z-index: 2;
+            font-family: "XHei Mono", "Inconsolata", Monaco, monospace;
+            font-size: 14px;
         }
 
-        #textBox {
-            font-family: "Inconsolata", monospace;
+        .play .prompt {
+            display: flex;
+            flex-shrink: 0;
+            padding: 16px;
+            z-index: 10;
+            background-color: #fff;
         }
 
+        .play .prompt .connection {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .play .connection {
+            margin-right: 16px;
+        }
+
+        .play .connection .green {
+            color: #0cc00c;
+        }
+
+        .play .connection .red {
+            color: #eb1f14;
+        }
+
+        .form-control {
+            display: block;
+            width: 100%;
+            padding: .375rem .75rem;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #495057;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid #ced4da;
+            border-radius: .25rem;
+            transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+        }
+
+        .play .prompt #textBox {
+            flex: 1;
+            margin-right: 8px;
+            font-family: "Inconsolata", Monaco, monospace;
+        }
     </style>
 </head>
 <body>
+
+<header>
+    <nav class="navbar navbar-expand-md">
+        <div>
+            <a href="#" class="navbar-brand">CloudRain</a>
+        </div>
+    </nav>
+</header>
