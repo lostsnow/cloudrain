@@ -1,8 +1,11 @@
 # config
+debug: false
 web:
   host: "localhost"
   port: 7071
 websocket:
+  host: "localhost"
+  port: 7071
   path: "ws"
 telnet:
   host: "localhost"

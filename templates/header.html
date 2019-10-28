@@ -24,7 +24,7 @@
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
 
     <!-- Solarized color Theme for bootstrap from https://github.com/aalpern/bootstrap-solarized -->
-    <link rel="stylesheet" href="css/bootstrap-solarized-dark.css">
+    <link rel="stylesheet" href="static/css/bootstrap-solarized-dark.css">
 
     <!-- Less ugly scrollbars. -->
     <style>
@@ -61,37 +61,3 @@
     </style>
 </head>
 <body>
-<div class="panel-body col-lg-offset-3 col-lg-6">
-    <h1>CloudRain &#128045;</h1>
-    <div class="row-fluid">
-        <div class="span12 well">
-            <div id="historyBox">
-                <!-- Messages will be inserted here. -->
-            </div>
-        </div>
-    </div>
-    <div>
-        <textarea id="textBox" class="form-control" rows="2" autofocus></textarea>
-    </div>
-</div>
-
-<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-
-<!-- Latest compiled and minified JavaScript -->
-<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-
-<!-- Load logic for connecting and talking. -->
-<script src="js/ansi_up.min.js"></script>
-<script src="js/tomato.js"></script>
-
-<script>
-    Tomato.websocket({
-        "address": "ws://172.22.22.11:7071/ws",
-        "historyBox": $("#historyBox"),
-        "textBox": $("#textBox")
-    });
-</script>
-
-</body>
-</html>

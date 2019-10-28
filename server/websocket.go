@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/lostsnow/cloudrain/charset"
 	log "github.com/lostsnow/cloudrain/logger"
@@ -23,35 +24,35 @@ type Server struct {
 	once      sync.Once
 }
 
-func TelnetProxy(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/"+viper.GetString("websocket.path") {
-		http.Error(w, "Not found", 404)
-		return
-	}
-	if r.Method != "GET" {
-		http.Error(w, "Method not allowed", 405)
-		return
+func WebsocketHandler(gc *gin.Context) {
+	s := &Server{
+		w: gc.Writer,
+		r: gc.Request,
 	}
 
-	s := &Server{
-		w: w,
-		r: r,
+	if gc.Request.URL.Path != "/"+viper.GetString("websocket.path") {
+		http.Error(s.w, "Not found", 404)
+		return
+	}
+	if gc.Request.Method != "GET" {
+		http.Error(s.w, "Method not allowed", 405)
+		return
 	}
 
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 
-	c, err := upgrader.Upgrade(w, r, nil)
+	c, err := upgrader.Upgrade(s.w, s.r, nil)
 	if err != nil {
-		http.Error(w, "Error creating websocket", 500)
+		http.Error(s.w, "Error creating websocket", 500)
 		log.Error("Error creating websocket: ", err)
 		return
 	}
 	defer c.Close()
 	s.Websocket = c
 
-	log.Info("Opening a proxy for ", r.RemoteAddr)
+	log.Info("Opening a proxy for ", s.r.RemoteAddr)
 	t, err := newTelnet()
 	if err != nil {
 		log.Error("Error opening telnet proxy: ", err)
@@ -60,7 +61,7 @@ func TelnetProxy(w http.ResponseWriter, r *http.Request) {
 	defer t.Close()
 	s.Telnet = t
 
-	log.Infof("Connection open for %s. Proxying...", r.RemoteAddr)
+	log.Infof("Connection open for %s. Proxying...", s.r.RemoteAddr)
 
 	cs := strings.ToLower(viper.GetString("telnet.charset"))
 
@@ -71,7 +72,7 @@ func TelnetProxy(w http.ResponseWriter, r *http.Request) {
 
 	// Wait until either go routine exits and then close both connections.
 	s.wg.Wait()
-	log.Info("Proxying completed for ", r.RemoteAddr)
+	log.Info("Proxying completed for ", s.r.RemoteAddr)
 }
 
 // Send messages from the websocket to the telnet.
