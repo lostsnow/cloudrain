@@ -12,6 +12,15 @@ Tomato.websocket = function (options) {
         }
     }
 
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     // Register listeners.
     jQuery(function () {
         // Check for websocket availability.
@@ -46,6 +55,7 @@ Tomato.websocket = function (options) {
                 if (!e.shiftKey) {
                     var content = this.value;
                     try {
+                        showMessage(escapeHtml(content));
                         socket.send(content);
                     } catch (exception) {
                         showMessage('<p class="text-warning">Couldn\'t send message.</p>');
