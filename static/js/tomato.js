@@ -2,6 +2,8 @@
 if (!Tomato) var Tomato = {};
 
 Tomato.websocket = function (options) {
+    var ansi_up = new AnsiUp;
+
     function showMessage(msg) {
         var historyBox = options.historyBox;
         var atBottom = (historyBox.scrollTop() + 40 >= historyBox[0].scrollHeight - historyBox.height());
@@ -37,7 +39,7 @@ Tomato.websocket = function (options) {
             };
 
             socket.onmessage = function (msg) {
-                msg = ansi_up.linkify(ansi_up.ansi_to_html(ansi_up.escape_for_html(msg.data)));
+                msg = ansi_up.ansi_to_html(msg.data);
 
                 showMessage(msg);
             };
