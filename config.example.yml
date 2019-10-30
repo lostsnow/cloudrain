@@ -4,6 +4,7 @@ web:
   host: "localhost"
   port: 7071
 websocket:
+  scheme: "ws"
   host: "localhost"
   port: 7071
   path: "ws"

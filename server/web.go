@@ -11,8 +11,9 @@ import (
 func WebHandler(c *gin.Context) {
 	c.HTML(
 		http.StatusOK, "index.html", gin.H{
-			"websocketAddress": fmt.Sprintf("ws://%s:%d/%s",
-				viper.GetString("websocket.host"), viper.GetInt("websocket.port"), viper.GetString("websocket.path")),
+			"websocketAddress": fmt.Sprintf("%s://%s:%d/%s",
+				viper.GetString("websocket.scheme"), viper.GetString("websocket.host"),
+				viper.GetInt("websocket.port"), viper.GetString("websocket.path")),
 		},
 	)
 }
