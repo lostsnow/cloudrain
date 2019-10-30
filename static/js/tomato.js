@@ -1,71 +1,110 @@
 // Tomato object setup
 if (!Tomato) var Tomato = {};
 
-Tomato.websocket = function (options) {
-    var ansi_up = new AnsiUp;
+// @see: https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
+Tomato.WebSocketClient = function (options = {}) {
+    this.number = 0;    // Message number
+    this.autoReconnectRetry = 0;
 
-    function showMessage(msg) {
-        var historyBox = options.historyBox;
-        var atBottom = (historyBox.scrollTop() + 40 >= historyBox[0].scrollHeight - historyBox.height());
-        historyBox.append(msg);
-        // If we were scrolled to the bottom before this call, remain there.
-        if (atBottom) {
-            historyBox.scrollTop(historyBox[0].scrollHeight - historyBox.height())
+    if (!options.autoReconnectMaxRetry) {
+        options.autoReconnectMaxRetry = 10;
+    }
+    this.autoReconnectMaxRetry = options.autoReconnectMaxRetry;
+    if (!options.autoReconnectInterval) {
+        options.autoReconnectInterval = 15 * 1000;
+    }
+    this.autoReconnectInterval = options.autoReconnectInterval;  // ms
+
+    this.options = options;
+};
+Tomato.WebSocketClient.prototype.open = function (url) {
+    var that = this;
+    this.url = url;
+    this.instance = new WebSocket(this.url);
+    this.instance.onopen = function () {
+        that.onopen();
+        if (that.reconnectTimeout) {
+            that.autoReconnectRetry = 0;
+            that.autoReconnectInterval = that.options.autoReconnectInterval;
+            clearTimeout(that.reconnectTimeout);
         }
+    };
+    this.instance.onmessage = function (data, flags) {
+        that.number++;
+        that.onmessage(data, flags, this.number);
+    };
+    this.instance.onclose = function (e) {
+        that.onclose(e);
+
+        // @see: https://tools.ietf.org/html/rfc6455#section-7.4.1
+        switch (e.code) {
+            case 1000:  // CLOSE_NORMAL
+                console.log("WebSocket: closed");
+                break;
+            default:    // Abnormal closure
+                that.reconnect(e);
+                break;
+        }
+    };
+    this.instance.onerror = function (e) {
+        switch (e.code) {
+            case 'ECONNREFUSED':
+                that.reconnect(e);
+                break;
+            default:
+                that.onerror(e);
+                break;
+        }
+    };
+};
+Tomato.WebSocketClient.prototype.send = function (data, option) {
+    try {
+        this.instance.send(data, option);
+    } catch (e) {
+        this.instance.emit('error', e);
+    }
+};
+Tomato.WebSocketClient.prototype.close = function (code, reason) {
+    try {
+        this.instance.close(code, reason);
+    } catch (e) {
+        this.instance.emit('error', e);
+    }
+};
+Tomato.WebSocketClient.prototype.reconnect = function (e) {
+    if (this.autoReconnectInterval <= 0) {
+        return;
+    }
+    var reconnectInterval = this.autoReconnectInterval * (1 + Math.log(this.autoReconnectRetry + 1));
+    console.log(`WebSocketClient: retry in ${reconnectInterval}ms`, e);
+    this.instance.removeEventListener("open", this.instance.onopen);
+    this.instance.removeEventListener("message", this.instance.onmessage);
+    this.instance.removeEventListener("close", this.instance.onclose);
+    this.instance.removeEventListener("error", this.instance.onerror);
+    var that = this;
+    if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout);
     }
 
-    function escapeHtml(text) {
-        return text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-
-    // Register listeners.
-    jQuery(function () {
-        // Check for websocket availability.
-        if (!("WebSocket" in window)) {
-            showMessage("Requires a browser with WebSockets support.");
-            return;
-        }
-
-        try {
-            var socket = new WebSocket(options.address);
-
-            socket.onopen = function () {
-                showMessage('<p class="text-success">Connected.</p>');
-            };
-
-            socket.onmessage = function (msg) {
-                msg = ansi_up.ansi_to_html(msg.data);
-
-                showMessage(msg);
-            };
-
-            socket.onclose = function () {
-                showMessage('<p class="text-danger">Disconnected.</p>');
-            }
-
-        } catch (exception) {
-            showMessage('<p class="text-danger">Error connecting.</p>');
-        }
-
-        options.textBox.keyup(function (e) {
-            if (e.keyCode === 13) {
-                if (!e.shiftKey) {
-                    var content = this.value + "\n";
-                    try {
-                        showMessage(escapeHtml(content));
-                        socket.send(content);
-                    } catch (exception) {
-                        showMessage('<p class="text-warning">Couldn\'t send message.</p>');
-                    }
-                    this.value = "";
-                    e.stopPropagation();
-                }
-            }
-        });
-    });
+    that.onreconnect(reconnectInterval);
+    this.reconnectTimeout = setTimeout(function () {
+        console.log("WebSocketClient: reconnecting...");
+        that.autoReconnectRetry++;
+        that.open(that.url);
+    }, reconnectInterval);
+};
+Tomato.WebSocketClient.prototype.onopen = function (e) {
+    console.log("WebSocketClient: open", arguments);
+};
+Tomato.WebSocketClient.prototype.onmessage = function (data, flags, number) {
+    console.log("WebSocketClient: message", arguments);
+};
+Tomato.WebSocketClient.prototype.onerror = function (e) {
+    console.log("WebSocketClient: error", arguments);
+};
+Tomato.WebSocketClient.prototype.onclose = function (e) {
+    console.log("WebSocketClient: closed", arguments);
+};
+Tomato.WebSocketClient.prototype.onreconnect = function (e) {
+    console.log("WebSocketClient: reconnect", arguments);
 };
