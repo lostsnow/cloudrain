@@ -72,7 +72,7 @@ Tomato.WebSocketClient.prototype.close = function (code, reason) {
     }
 };
 Tomato.WebSocketClient.prototype.reconnect = function (e) {
-    if (this.autoReconnectInterval <= 0) {
+    if (this.autoReconnectInterval <= 0 || this.autoReconnectRetry >= this.autoReconnectMaxRetry) {
         return;
     }
     var reconnectInterval = this.autoReconnectInterval * (1 + Math.log(this.autoReconnectRetry + 1));
