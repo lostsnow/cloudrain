@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/gin-gonic/gin v1.4.0
 	github.com/gorilla/websocket v1.4.1
+	github.com/json-iterator/go v1.1.6
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.4.0
 	github.com/tehbilly/gmudc v0.0.0-20150617063017-28f45833c1e1

@@ -44,8 +44,28 @@
                 connectionIcon.removeClass("red").addClass("green").attr("title", "Connected");
             };
             wsc.onmessage = function (msg) {
-                msg = ansi_up.ansi_to_html(msg.data);
-                showMessage(msg);
+                // console.log(msg);
+                if (msg.data === "") {
+                    return;
+                }
+                // @TODO: mxp & gmcp
+                try {
+                    var resp = $.parseJSON(msg.data);
+                    if (resp.event === "text") {
+                        msg = ansi_up.ansi_to_html(resp.content);
+                        showMessage(msg);
+                    } else if (resp.event === "sessionid") {
+                        Tomato.cookie.set("sessionid", resp.content)
+                    } else if (resp.event === "ping") {
+                        console.log("ping...");
+                    } else if (resp.event === "atcp") {
+                        console.log("atcp");
+                    } else if (resp.event === "mxp") {
+                        console.log("mxp");
+                    }
+                } catch (e) {
+                    console.log(e);
+                }
             };
             wsc.onclose = function () {
                 showMessage('<p class="text-danger">Disconnected.</p>');
@@ -70,10 +90,13 @@
             $("#textBox").keyup(function (e) {
                 if (e.keyCode === 13) {
                     if (!e.shiftKey) {
-                        var content = this.value + "\n";
+                        var cmd = {
+                            "type": "cmd",
+                            "content": this.value + "\n"
+                        };
                         try {
-                            showMessage(escapeHtml(content));
-                            wsc.send(content);
+                            showMessage(escapeHtml(cmd.content));
+                            wsc.send(JSON.stringify(cmd));
                         } catch (exception) {
                             showMessage('<p class="text-warning">Couldn\'t send message.</p>');
                         }

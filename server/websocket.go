@@ -1,130 +1,217 @@
 package server
 
 import (
-	"bufio"
-	"bytes"
+	"fmt"
+	"io"
 	"net/http"
-	"strings"
+	"strconv"
 	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/lostsnow/cloudrain/charset"
+	"github.com/json-iterator/go"
 	log "github.com/lostsnow/cloudrain/logger"
+	"github.com/lostsnow/cloudrain/telnet"
 	"github.com/spf13/viper"
-	"github.com/tehbilly/gmudc/telnet"
 )
 
-type Server struct {
-	w         http.ResponseWriter
-	r         *http.Request
-	Telnet    *telnet.Connection
-	Websocket *websocket.Conn
-	wg        sync.WaitGroup
-	once      sync.Once
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
+
+var (
+	lock     sync.RWMutex
+	sessions = make(map[string]*telnet.Session)
+)
+
+type sessionTrace interface {
+	SessionCreated()
+	SessionClosed()
 }
 
-func WebsocketHandler(gc *gin.Context) {
-	s := &Server{
-		w: gc.Writer,
-		r: gc.Request,
+var trace sessionTrace
+
+type wsWrapper struct {
+	*websocket.Conn
+}
+
+func (wsw *wsWrapper) Write(p []byte) (n int, err error) {
+	writer, err := wsw.Conn.NextWriter(websocket.TextMessage)
+	if err != nil {
+		return 0, err
+	}
+	return writer.Write(p)
+}
+
+func (wsw *wsWrapper) Read(p []byte) (n int, err error) {
+	for {
+		msgType, reader, err := wsw.Conn.NextReader()
+		if err != nil {
+			return 0, err
+		}
+		if msgType != websocket.TextMessage {
+			continue
+		}
+		return reader.Read(p)
+	}
+}
+
+func WebsocketHandler(c *gin.Context) {
+	if c.Request.URL.Path != "/"+viper.GetString("websocket.path") {
+		http.Error(c.Writer, "Not found", 404)
+		return
+	}
+	if c.Request.Method != "GET" {
+		http.Error(c.Writer, "Method not allowed", 405)
+		return
 	}
 
-	if gc.Request.URL.Path != "/"+viper.GetString("websocket.path") {
-		http.Error(s.w, "Not found", 404)
-		return
-	}
-	if gc.Request.Method != "GET" {
-		http.Error(s.w, "Method not allowed", 405)
-		return
+	var sidCookie string
+	cookie, err := c.Request.Cookie("sessionid")
+	if err == nil {
+		sidCookie = cookie.Value
 	}
 
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 
-	c, err := upgrader.Upgrade(s.w, s.r, nil)
+	up, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		http.Error(s.w, "Error creating websocket", 500)
+		http.Error(c.Writer, "Error creating websocket", 500)
 		log.Error("Error creating websocket: ", err)
 		return
 	}
-	defer c.Close()
-	s.Websocket = c
 
-	log.Info("Opening a proxy for ", s.r.RemoteAddr)
-	t, err := newTelnet()
+	log.Info("Opening a proxy for ", c.Request.RemoteAddr)
+
+	rw := io.ReadWriteCloser(&wsWrapper{up})
+	me := telnet.NewMultiWriterEntry(rw)
+	onClose := func(s *telnet.Session) {
+		lock.Lock()
+		defer lock.Unlock()
+		delete(sessions, s.Id())
+		log.Infof("session ended %s.", plural(len(sessions)))
+		if trace != nil {
+			trace.SessionClosed()
+		}
+	}
+	up.SetCloseHandler(func(code int, text string) error {
+		if err = up.Close(); err != nil {
+			log.Error(err)
+		}
+		return nil
+	})
+
+	var t telnet.Telnet
+	err = viper.UnmarshalKey("telnet", &t)
 	if err != nil {
-		log.Error("Error opening telnet proxy: ", err)
+		log.Errorf("invalid telnet config: %v", t)
 		return
 	}
-	defer t.Close()
-	s.Telnet = t
 
-	log.Infof("Connection open for %s. Proxying...", s.r.RemoteAddr)
+	var sess *telnet.Session
+	var sid string
+	if t.MultiConnection {
+		sid = c.Request.URL.Query().Get("sid")
+		if sid == "" && sidCookie != "" {
+			sid = sidCookie
+		}
 
-	cs := strings.ToLower(viper.GetString("telnet.charset"))
+		if sid != "" {
+			log.Infof("try to attach session %s, %s.", sid, plural(len(sessions)))
+			if attachToExistingSession(sid, me) {
+				go sendCommand(up, sessions[sid])
+				return
+			}
+		}
+	}
 
-	s.wg.Add(1)
+	sess, err = t.NewSession(sid, rw, onClose)
+	if err == nil {
+		lock.Lock()
+		defer lock.Unlock()
+		sessions[sess.Id()] = sess
 
-	go s.writeMessage(cs)
-	go s.readMessage(cs)
+		log.Infof("session started %s, %s.", sess.Id(), plural(len(sessions)))
 
-	// Wait until either go routine exits and then close both connections.
-	s.wg.Wait()
-	log.Info("Proxying completed for ", s.r.RemoteAddr)
+		if trace != nil {
+			trace.SessionCreated()
+		}
+
+		go sendCommand(up, sess)
+	} else {
+		log.Errorf("error on session start: %s", err.Error())
+	}
+}
+
+func attachToExistingSession(sid string, me *telnet.MultiWriterEntry) bool {
+	lock.RLock()
+	defer lock.RUnlock()
+
+	sess, ok := sessions[sid]
+	if !ok {
+		return false
+	}
+
+	err := sess.Attach(me)
+	if err == nil {
+		log.Infof("session attached %s, %s", sid, plural(len(sessions)))
+	} else {
+		log.Errorf("error on session attach %s: %s", sid, err.Error())
+	}
+
+	return true
+}
+
+func plural(value int) string {
+	if value == 0 {
+		return "(no active sessions)"
+	} else if value == 1 {
+		return "(1 active session)"
+	} else {
+		return "(" + strconv.Itoa(value) + " active sessions)"
+	}
+}
+
+type command struct {
+	Type    string
+	Content string
 }
 
 // Send messages from the websocket to the telnet.
-func (s *Server) writeMessage(cs string) {
-	defer s.once.Do(func() { s.wg.Done() })
+func sendCommand(ws *websocket.Conn, sess *telnet.Session) {
 	for {
-		_, bs, err := s.Websocket.ReadMessage()
+		_, bs, err := ws.ReadMessage()
 		if err != nil {
-			log.Errorf("Error reading from ws(%s): %v", s.r.RemoteAddr, err)
+			log.Errorf("Error reading from ws(%s): %v", ws.RemoteAddr(), err)
 			break
 		}
 
-		if cs != "utf-8" {
-			bs, err = charset.Encode(bs, cs)
-			if err != nil {
-				log.Error("Error convert websocket encoding")
-				break
+		cmd := command{}
+		if err = json.Unmarshal(bs, &cmd); err != nil {
+			log.Error(err)
+			continue
+		}
+
+		t := cmd.Type
+		switch t {
+		case "cmd":
+			sess.SendCommand(cmd.Content)
+
+		case "naws":
+			var w, h int
+			_, err := fmt.Sscanf(cmd.Content, "%d,%d", &w, &h)
+			if err == nil {
+				sess.SendNaws(byte(w), byte(h))
 			}
-		}
 
-		// TODO: Partial writes.
-		if _, err := s.Telnet.Write(bs); err != nil {
-			log.Errorf("Error sending message to telnet for %s: %v", s.r.RemoteAddr, err)
-			break
-		}
-	}
-}
+		case "atcp":
+			sess.SendAtcp(cmd.Content)
 
-// Send messages from the telnet to the websocket.
-func (s *Server) readMessage(cs string) {
-	defer s.once.Do(func() { s.wg.Done() })
-	br := bufio.NewReader(s.Telnet)
-	for {
-		bs := make([]byte, 1024)
-		n, err := br.Read(bs)
-		if err != nil {
-			log.Errorf("Error reading from telnet for %s: %v", s.r.Host, err)
-			break
-		}
+		case "mxp":
+			sess.SendMxp(cmd.Content)
 
-		bs = bytes.ReplaceAll(bs[:n], []byte{0xff, 0xf9}, []byte("\r"))
-		if cs != "utf-8" {
-			bs, err = charset.Decode(bs, cs)
-			if err != nil {
-				log.Error("Error convert telnet encoding")
-				break
-			}
-		}
-
-		if err = s.Websocket.WriteMessage(websocket.TextMessage, bs); err != nil {
-			log.Errorf("Error sending to ws(%s): %v", s.r.RemoteAddr, err)
-			break
+		default:
+			log.Error(telnet.ErrInvalidCommand)
 		}
 	}
 }

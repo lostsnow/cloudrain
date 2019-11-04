@@ -14,7 +14,7 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Serve websocket and web frontend",
 	Run: func(cmd *cobra.Command, args []string) {
-		if !viper.GetBool("debug") {
+		if !viper.GetBool("web.debug") {
 			gin.SetMode(gin.ReleaseMode)
 		}
 
@@ -27,10 +27,10 @@ var serveCmd = &cobra.Command{
 		r.GET("/"+viper.GetString("websocket.path"), server.WebsocketHandler)
 
 		addr := viper.GetString("web.host") + ":" + strconv.Itoa(viper.GetInt("web.port"))
-		log.Info("Listening and serving HTTP on ", addr)
+		log.Info("Listening on ", addr)
 		err := r.Run(addr)
 		if err != nil {
-			log.Fatal("Listening and serving HTTP error: ", err)
+			log.Fatal("Listen error: ", err)
 		}
 	},
 }
