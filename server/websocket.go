@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"sync"
@@ -70,6 +71,16 @@ func WebsocketHandler(c *gin.Context) {
 		sidCookie = cookie.Value
 	}
 
+	var ip string
+	ip = c.Request.Header.Get("X-REAL-IP")
+	if ip == "" {
+		ip, _, err = net.SplitHostPort(c.Request.RemoteAddr)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
@@ -119,7 +130,7 @@ func WebsocketHandler(c *gin.Context) {
 		if sid != "" {
 			log.Infof("try to attach session %s, %s.", sid, plural(len(sessions)))
 			if attachToExistingSession(sid, me) {
-				go sendCommand(up, sessions[sid])
+				go handleCommand(up, sessions[sid])
 				return
 			}
 		}
@@ -127,6 +138,7 @@ func WebsocketHandler(c *gin.Context) {
 
 	sess, err = t.NewSession(sid, rw, onClose)
 	if err == nil {
+		sess.RemoteIp = ip
 		lock.Lock()
 		defer lock.Unlock()
 		sessions[sess.Id()] = sess
@@ -137,7 +149,7 @@ func WebsocketHandler(c *gin.Context) {
 			trace.SessionCreated()
 		}
 
-		go sendCommand(up, sess)
+		go handleCommand(up, sess)
 	} else {
 		log.Errorf("error on session start: %s", err.Error())
 	}
@@ -178,7 +190,7 @@ type command struct {
 }
 
 // Send messages from the websocket to the telnet.
-func sendCommand(ws *websocket.Conn, sess *telnet.Session) {
+func handleCommand(ws *websocket.Conn, sess *telnet.Session) {
 	for {
 		_, bs, err := ws.ReadMessage()
 		if err != nil {
