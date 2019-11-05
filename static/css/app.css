@@ -1,0 +1,117 @@
+button, input, optgroup, select, textarea {
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+button, input {
+    overflow: visible;
+}
+
+body {
+    color: #1a2837;
+}
+
+.navbar {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding: .5rem 1rem;
+    background-color: #000;
+    border-radius: 0;
+    font-family: "Noto Sans Mono CJK SC", "XHei Mono", "Inconsolata", Monaco, monospace;
+}
+
+.navbar-expand-md {
+    flex-flow: row nowrap;
+    -ms-flex-pack: start;
+    justify-content: flex-start;
+}
+
+.navbar-brand {
+    display: inline-block;
+    padding: 3px 0;
+    font-size: 26px;
+    line-height: inherit;
+    white-space: nowrap;
+    color: #c3cbd5;
+}
+
+.navbar-brand:hover {
+    color: #c3cbd5;
+}
+
+.play {
+    border-top: 2px solid #495869;
+    width: 100%;
+    position: absolute;
+    top: 58px;
+    bottom: 0;
+}
+
+.play .window {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+}
+
+.play .terminal {
+    width: 100%;
+    padding: 16px;
+    flex-grow: 1;
+    overflow-y: scroll;
+    background-color: #000;
+    color: #c3cbd5;
+    white-space: pre-wrap;
+    z-index: 2;
+    font-family: "Noto Sans Mono CJK SC", "XHei Mono", "Inconsolata", Monaco, monospace;
+    font-size: 14px;
+}
+
+.play .prompt {
+    display: flex;
+    flex-shrink: 0;
+    padding: 16px;
+    z-index: 10;
+    background-color: #fff;
+}
+
+.play .prompt .connection {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+}
+
+.play .prompt .connection i {
+    cursor: pointer;
+}
+
+.play .prompt .connection .green {
+    color: #0cc00c;
+}
+
+.play .prompt .connection .red {
+    color: #eb1f14;
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    padding: .375rem .75rem;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+.play .prompt #textBox {
+    flex: 1;
+    margin-right: 8px;
+    font-family: "Noto Sans Mono CJK SC", "XHei Mono", "Inconsolata", Monaco, monospace;
+}
