@@ -40,7 +40,7 @@ type Session struct {
 	termTypeIx int
 	debugBuf   []byte
 	lastWrite  time.Time
-	remoteAddr string
+	RemoteIp   string
 }
 
 type message struct {
@@ -77,7 +77,6 @@ func (t *Telnet) NewSession(sid string, rwc io.ReadWriteCloser, onClose func(s *
 		debugBuf: make([]byte, 0, 256),
 		id:       sid,
 		commands: commandCh,
-		// remoteAddr: me.conn.RemoteAddr().String(),
 	}
 
 	go func() {
@@ -262,7 +261,12 @@ func (sess *Session) handleOption() error {
 			return err
 		}
 		sess.FlushTelnetBuffer()
-		return sess.handleWill(second)
+		switch second {
+		case OPT_MSSP:
+			return sess.handleDo(second)
+		default:
+			return sess.handleWill(second)
+		}
 
 	case WONT:
 		_, err = sess.readOptionByte(false)
@@ -315,9 +319,12 @@ func (sess *Session) handleSb(data []byte) error {
 		replyMask := mask | LINEMODE_MODE_ACK
 		return sess.writeSb(OPT_LINEMODE, []byte{LINEMODE_MODE, replyMask})
 
+	case OPT_MSSP:
+		return sess.writeSocketRaw("mssp", data[1:])
+
 	case OPT_ATCP:
 		if string(data[1:]) == "Auth.Request ON" && sess.telnet.SendRemoteIp {
-			sess.sendRemoteIp()
+			sess.sendATCPRemoteIp()
 		}
 		return sess.writeSocketRaw("atcp", data[1:])
 
@@ -362,8 +369,8 @@ func (sess *Session) writeSbString(option byte, text string) error {
 	return sess.writeSb(option, []byte(text))
 }
 
-func (sess *Session) sendRemoteIp() {
-	addr := sess.remoteAddr
+func (sess *Session) sendATCPRemoteIp() {
+	addr := sess.RemoteIp
 	portSep := strings.Index(addr, ":")
 	if portSep != -1 {
 		addr = addr[:portSep]
@@ -384,7 +391,7 @@ func (sess *Session) handleDo(second byte) error {
 	var err error
 	switch second {
 	case OPT_ATCP:
-		err = sess.writeOption(IAC, WILL, OPT_ATCP)
+		err = sess.writeOption(IAC, WILL, second)
 		if err != nil {
 			return err
 		}
@@ -409,7 +416,7 @@ func (sess *Session) handleDo(second byte) error {
 		}
 
 	case OPT_NAWS:
-		return sess.writeOption(IAC, WILL, OPT_NAWS)
+		return sess.writeOption(IAC, WILL, second)
 
 	case OPT_TTYPE, OPT_ENVIRON, OPT_LINEMODE, OPT_NEW_ENVIRON:
 		return sess.writeOption(IAC, WILL, second)
@@ -420,6 +427,9 @@ func (sess *Session) handleDo(second byte) error {
 			return err
 		}
 		return sess.writeOption(IAC, WILL, second)
+
+	case OPT_MSSP:
+		return sess.writeOption(IAC, DO, second)
 
 	default:
 		return sess.writeOption(IAC, WONT, second)

@@ -58,6 +58,8 @@
                         Tomato.cookie.set("sessionid", resp.content)
                     } else if (resp.event === "ping") {
                         console.log("ping...");
+                    } else if (resp.event === "mssp") {
+                        console.log("mssp:", resp.content);
                     } else if (resp.event === "atcp") {
                         console.log("atcp");
                     } else if (resp.event === "mxp") {
