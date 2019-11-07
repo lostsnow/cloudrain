@@ -13,6 +13,20 @@ body {
     color: #1a2837;
 }
 
+.form-control {
+    display: block;
+    width: 100%;
+    padding: .375rem .75rem;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
 .navbar {
     display: flex;
     align-items: center;
@@ -96,21 +110,7 @@ body {
     color: #eb1f14;
 }
 
-.form-control {
-    display: block;
-    width: 100%;
-    padding: .375rem .75rem;
-    font-size: 14px;
-    line-height: 1.5;
-    color: #495057;
-    background-color: #fff;
-    background-clip: padding-box;
-    border: 1px solid #ced4da;
-    border-radius: .25rem;
-    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
-}
-
-.play .prompt #textBox {
+.play .prompt #prompt-input {
     flex: 1;
     margin-right: 8px;
     font-family: "Noto Sans Mono CJK SC", "XHei Mono", "Inconsolata", Monaco, monospace;

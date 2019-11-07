@@ -25,7 +25,7 @@ func WebHandler(c *gin.Context) {
 
 	c.HTML(
 		http.StatusOK, "index.html", gin.H{
-			"websocketAddress": u.String(),
+			"websocketUrl": u.String(),
 		},
 	)
 }
