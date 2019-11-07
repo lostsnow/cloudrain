@@ -431,6 +431,9 @@ func (sess *Session) handleDo(second byte) error {
 	case OPT_MSSP:
 		return sess.writeOption(IAC, DO, second)
 
+	case OPT_MXP:
+		return sess.writeOption(IAC, WILL, second)
+
 	default:
 		return sess.writeOption(IAC, WONT, second)
 	}
