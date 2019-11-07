@@ -152,6 +152,9 @@ func WebsocketHandler(c *gin.Context) {
 		go handleCommand(up, sess)
 	} else {
 		log.Errorf("error on session start: %s", err.Error())
+		if err = up.Close(); err != nil {
+			log.Error(err)
+		}
 	}
 }
 
