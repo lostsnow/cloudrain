@@ -32,6 +32,12 @@ var serveCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal("Listen error: ", err)
 		}
+
+		defer func() {
+			if err := recover(); err != nil {
+				log.Errorf("panic: %s", err)
+			}
+		}()
 	},
 }
 
