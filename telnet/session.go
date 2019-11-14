@@ -29,6 +29,7 @@ type Session struct {
 	telnet     *Telnet
 	conn       net.Conn
 	id         string
+	token      string
 	writer     *multiWriter
 	readCh     <-chan byte
 	commands   chan<- interface{}
@@ -48,12 +49,21 @@ type message struct {
 	Content string `json:"content"`
 }
 
+type sessionIdentity struct {
+	Sid   string `json:"sid"`
+	Token string `json:"token"`
+}
+
 func (t *Telnet) NewSession(sid string, rwc io.ReadWriteCloser, onClose func(s *Session)) (sess *Session, err error) {
 	if sid == "" {
 		sid, err = generateId()
 		if err != nil {
 			return nil, err
 		}
+	}
+	token, err := generateId()
+	if err != nil {
+		return nil, err
 	}
 
 	mw := NewMultiWriter(rwc)
@@ -76,7 +86,17 @@ func (t *Telnet) NewSession(sid string, rwc io.ReadWriteCloser, onClose func(s *
 		reader:   bufio.NewReader(conn),
 		debugBuf: make([]byte, 0, 256),
 		id:       sid,
+		token:    token,
 		commands: commandCh,
+	}
+
+	si := &sessionIdentity{
+		Sid:   sid,
+		Token: token,
+	}
+	siBytes, err := json.Marshal(si)
+	if err != nil {
+		return nil, err
 	}
 
 	go func() {
@@ -90,7 +110,7 @@ func (t *Telnet) NewSession(sid string, rwc io.ReadWriteCloser, onClose func(s *
 		defer close(quitCh)
 
 		sess.initReadChannel(quitCh)
-		if err := sess.writeSocketRaw("sessionid", []byte(sess.id)); err != nil {
+		if err := sess.writeSocketRaw("session", siBytes); err != nil {
 			internal.Log.Println(err)
 		}
 
@@ -654,13 +674,17 @@ func (sess *Session) testPing() error {
 	return nil
 }
 
+func (sess *Session) Token() string {
+	return sess.token
+}
+
 func (sess *Session) Id() string {
 	return sess.id
 }
 
 func generateId() (string, error) {
 	idEncoding := base32.NewEncoding("123456789abcdefghijklmnopqrstuvw")
-	b := make([]byte, 16)
+	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return "", nil
 	}
