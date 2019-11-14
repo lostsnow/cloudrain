@@ -70,6 +70,11 @@ func WebsocketHandler(c *gin.Context) {
 	if err == nil {
 		sidCookie = cookie.Value
 	}
+	var tokenCookie string
+	cookie, err = c.Request.Cookie("token")
+	if err == nil {
+		tokenCookie = cookie.Value
+	}
 
 	var ip string
 	ip = c.Request.Header.Get("X-REAL-IP")
@@ -127,11 +132,13 @@ func WebsocketHandler(c *gin.Context) {
 			sid = sidCookie
 		}
 
-		if sid != "" {
+		if sid != "" && tokenCookie != "" {
 			log.Infof("try to attach session %s, %s.", sid, plural(len(sessions)))
-			if attachToExistingSession(sid, me) {
+			if attachToExistingSession(sid, tokenCookie, me) {
 				go handleCommand(up, sessions[sid])
 				return
+			} else {
+				sid = ""
 			}
 		}
 	}
@@ -158,12 +165,17 @@ func WebsocketHandler(c *gin.Context) {
 	}
 }
 
-func attachToExistingSession(sid string, me *telnet.MultiWriterEntry) bool {
+func attachToExistingSession(sid, token string, me *telnet.MultiWriterEntry) bool {
 	lock.RLock()
 	defer lock.RUnlock()
 
 	sess, ok := sessions[sid]
 	if !ok {
+		return false
+	}
+
+	if sess.Token() != token {
+		log.Errorf("invalid session %s token %s", sid, token)
 		return false
 	}
 

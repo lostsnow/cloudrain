@@ -1,6 +1,21 @@
 jQuery(function ($) {
     var ansi_up = new AnsiUp;
 
+    var getUrlParameter = function getUrlParameter(sParam) {
+        var sPageURL = window.location.search.substring(1),
+            sURLVariables = sPageURL.split('&'),
+            sParameterName,
+            i;
+
+        for (i = 0; i < sURLVariables.length; i++) {
+            sParameterName = sURLVariables[i].split('=');
+
+            if (sParameterName[0] === sParam) {
+                return sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
+            }
+        }
+    };
+
     var showMessage = function (msg) {
         var terminalBox = $("#terminal-box");
         var atBottom = (terminalBox.scrollTop() + 40 >= terminalBox[0].scrollHeight - terminalBox.height());
@@ -43,8 +58,26 @@ jQuery(function ($) {
                 if (resp.event === "text") {
                     msg = ansi_up.ansi_to_html(resp.content);
                     showMessage(msg);
-                } else if (resp.event === "sessionid") {
-                    Tomato.cookie.set("sessionid", resp.content)
+                } else if (resp.event === "session") {
+                    try {
+                        var session = $.parseJSON(resp.content);
+                        if (!session.sid || !session.token) {
+                            showMessage("Invalid websocket session");
+                            wsc.autoReconnectInterval = 0;
+                            wsc.close(1000);
+                            return;
+                        }
+                        Tomato.cookie.set("sessionid", session.sid);
+                        Tomato.cookie.set("token", session.token);
+                        var query_sid = getUrlParameter('sid');
+                        if (query_sid && session.sid !== query_sid) {
+                            window.history.pushState('', '', location.href.replace('sid=' + query_sid, 'sid=' + session.sid));
+                        }
+                    } catch (e) {
+                        showMessage("Invalid websocket response");
+                        wsc.autoReconnectInterval = 0;
+                        wsc.close(1000);
+                    }
                 } else if (resp.event === "ping") {
                     console.log("ping...");
                 } else if (resp.event === "mssp") {
