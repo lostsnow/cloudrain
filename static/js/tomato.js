@@ -138,3 +138,37 @@ Tomato.cookie = {
         document.cookie = name + '=; Max-Age=-99999999;';
     }
 };
+
+Tomato.GetUrlParameter = function (sParam) {
+    var sPageURL = window.location.search.substring(1),
+        sURLVariables = sPageURL.split('&'),
+        sParameterName,
+        i;
+
+    for (i = 0; i < sURLVariables.length; i++) {
+        sParameterName = sURLVariables[i].split('=');
+
+        if (sParameterName[0] === sParam) {
+            return sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
+        }
+    }
+};
+
+/**
+ * @return {string}
+ */
+Tomato.EscapeHtml = function (html) {
+    return html
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+};
+
+Tomato.CopySelect = function () {
+    if (!window.document.queryCommandSupported || !window.document.queryCommandSupported("copy")) {
+        return;
+    }
+    window.document.execCommand("copy");
+};
