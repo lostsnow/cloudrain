@@ -3,21 +3,6 @@ jQuery(function ($) {
     var terminalBox = $("#terminal-box");
     var promptInput = $('#prompt-input');
 
-    var getUrlParameter = function getUrlParameter(sParam) {
-        var sPageURL = window.location.search.substring(1),
-            sURLVariables = sPageURL.split('&'),
-            sParameterName,
-            i;
-
-        for (i = 0; i < sURLVariables.length; i++) {
-            sParameterName = sURLVariables[i].split('=');
-
-            if (sParameterName[0] === sParam) {
-                return sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
-            }
-        }
-    };
-
     var showMessage = function (msg) {
         var atBottom = (terminalBox.scrollTop() + 40 >= terminalBox[0].scrollHeight - terminalBox.height());
         terminalBox.append(msg);
@@ -25,15 +10,6 @@ jQuery(function ($) {
         if (atBottom) {
             terminalBox.scrollTop(terminalBox[0].scrollHeight - terminalBox.height())
         }
-    };
-
-    var escapeHtml = function (text) {
-        return text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
     };
 
     // Check for websocket availability.
@@ -49,45 +25,53 @@ jQuery(function ($) {
             connectionIcon.removeClass("red").addClass("green").attr("title", "Connected");
         };
         wsc.onmessage = function (msg) {
-            // console.log(msg);
             if (msg.data === "") {
                 return;
             }
             // @TODO: mxp & gmcp
             try {
                 var resp = JSON.parse(msg.data);
-                if (resp.event === "text") {
-                    msg = ansi_up.ansi_to_html(resp.content);
-                    showMessage(msg);
-                } else if (resp.event === "session") {
-                    try {
-                        /** @var {{sid:string, token:string}} session */
-                        var session = JSON.parse(resp.content);
-                        if (!session.sid || !session.token) {
-                            showMessage("Invalid websocket session");
+                switch (resp.event) {
+                    case "text":
+                        msg = ansi_up.ansi_to_html(resp.content);
+                        showMessage(msg);
+                        break;
+                    case "session":
+                        try {
+                            /** @var {{sid:string, token:string}} session */
+                            var session = JSON.parse(resp.content);
+                            if (!session.sid || !session.token) {
+                                showMessage("Invalid websocket session");
+                                wsc.autoReconnectInterval = 0;
+                                wsc.close(1000);
+                                return;
+                            }
+                            Tomato.cookie.set("sessionid", session.sid);
+                            Tomato.cookie.set("token", session.token);
+                            var query_sid = Tomato.GetUrlParameter('sid');
+                            if (query_sid && session.sid !== query_sid) {
+                                window.history.pushState('', '', location.href.replace('sid=' + query_sid, 'sid=' + session.sid));
+                            }
+                        } catch (e) {
+                            showMessage("Invalid websocket response");
                             wsc.autoReconnectInterval = 0;
                             wsc.close(1000);
-                            return;
                         }
-                        Tomato.cookie.set("sessionid", session.sid);
-                        Tomato.cookie.set("token", session.token);
-                        var query_sid = getUrlParameter('sid');
-                        if (query_sid && session.sid !== query_sid) {
-                            window.history.pushState('', '', location.href.replace('sid=' + query_sid, 'sid=' + session.sid));
-                        }
-                    } catch (e) {
-                        showMessage("Invalid websocket response");
-                        wsc.autoReconnectInterval = 0;
-                        wsc.close(1000);
-                    }
-                } else if (resp.event === "ping") {
-                    console.log("ping...");
-                } else if (resp.event === "mssp") {
-                    console.log("mssp:", resp.content);
-                } else if (resp.event === "atcp") {
-                    console.log("atcp");
-                } else if (resp.event === "mxp") {
-                    console.log("mxp");
+                        break;
+                    case "ping":
+                        console.log("ping...");
+                        break;
+                    case "mssp":
+                        console.log("mssp:", resp.content);
+                        break;
+                    case "atcp":
+                        console.log("atcp");
+                        break;
+                    case "mxp":
+                        console.log("mxp");
+                        break;
+                    default:
+                        break;
                 }
             } catch (e) {
                 console.log(e);
@@ -113,8 +97,19 @@ jQuery(function ($) {
             }
         });
 
-        terminalBox.on("click", function () {
-            promptInput.trigger("focus");
+        terminalBox.on("mouseup", function () {
+            var selection;
+            if (window.getSelection) {
+                selection = window.getSelection();
+            } else if (document.selection) {
+                selection = document.selection.createRange();
+            }
+
+            if (selection.toString() !== "") {
+                Tomato.CopySelect();
+            } else {
+                promptInput.trigger("focus");
+            }
         });
 
         promptInput.inputHistory({
@@ -124,13 +119,13 @@ jQuery(function ($) {
 
         promptInput.on("keyup", function (e) {
             if (e.key === "Enter") {
-                if (!e.shiftKey) {  
+                if (!e.shiftKey) {
                     var cmd = {
                         "type": "cmd",
                         "content": this.value + "\n"
                     };
                     try {
-                        showMessage(escapeHtml(cmd.content));
+                        showMessage(Tomato.EscapeHtml(cmd.content));
                         wsc.send(JSON.stringify(cmd));
                     } catch (exception) {
                         showMessage("<p class=\"text-warning\">Couldn't send message.</p>");

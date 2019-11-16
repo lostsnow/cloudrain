@@ -25,6 +25,7 @@ func WebHandler(c *gin.Context) {
 
 	c.HTML(
 		http.StatusOK, "index.html", gin.H{
+			"debug": viper.GetBool("web.debug"),
 			"websocketUrl": u.String(),
 		},
 	)
