@@ -1,5 +1,7 @@
 jQuery(function ($) {
     var ansi_up = new AnsiUp;
+    var terminalBox = $("#terminal-box");
+    var promptInput = $('#prompt-input');
 
     var getUrlParameter = function getUrlParameter(sParam) {
         var sPageURL = window.location.search.substring(1),
@@ -17,7 +19,6 @@ jQuery(function ($) {
     };
 
     var showMessage = function (msg) {
-        var terminalBox = $("#terminal-box");
         var atBottom = (terminalBox.scrollTop() + 40 >= terminalBox[0].scrollHeight - terminalBox.height());
         terminalBox.append(msg);
         // If we were scrolled to the bottom before this call, remain there.
@@ -54,13 +55,14 @@ jQuery(function ($) {
             }
             // @TODO: mxp & gmcp
             try {
-                var resp = $.parseJSON(msg.data);
+                var resp = JSON.parse(msg.data);
                 if (resp.event === "text") {
                     msg = ansi_up.ansi_to_html(resp.content);
                     showMessage(msg);
                 } else if (resp.event === "session") {
                     try {
-                        var session = $.parseJSON(resp.content);
+                        /** @var {{sid:string, token:string}} session */
+                        var session = JSON.parse(resp.content);
                         if (!session.sid || !session.token) {
                             showMessage("Invalid websocket session");
                             wsc.autoReconnectInterval = 0;
@@ -103,7 +105,7 @@ jQuery(function ($) {
             showMessage('<p class="text-warning">Reconnecting in ' + interval + ' seconds.</p>');
         };
 
-        connectionIcon.click(function () {
+        connectionIcon.on("click", function () {
             if ($(this).hasClass("red")) {
                 wsc.open(url);
             } else if ($(this).hasClass("green")) {
@@ -111,9 +113,18 @@ jQuery(function ($) {
             }
         });
 
-        $("#prompt-input").keyup(function (e) {
-            if (e.keyCode === 13) {
-                if (!e.shiftKey) {
+        terminalBox.on("click", function () {
+            promptInput.trigger("focus");
+        });
+
+        promptInput.inputHistory({
+            size: 50,
+            ignoreEmpty: true
+        });
+
+        promptInput.on("keyup", function (e) {
+            if (e.key === "Enter") {
+                if (!e.shiftKey) {  
                     var cmd = {
                         "type": "cmd",
                         "content": this.value + "\n"
@@ -122,7 +133,7 @@ jQuery(function ($) {
                         showMessage(escapeHtml(cmd.content));
                         wsc.send(JSON.stringify(cmd));
                     } catch (exception) {
-                        showMessage('<p class="text-warning">Couldn\'t send message.</p>');
+                        showMessage("<p class=\"text-warning\">Couldn't send message.</p>");
                     }
                     this.value = "";
                     e.stopPropagation();
