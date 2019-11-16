@@ -2,7 +2,8 @@
 if (!Tomato) var Tomato = {};
 
 // @see: https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
-Tomato.WebSocketClient = function (options = {}) {
+Tomato.WebSocketClient = function (options) {
+    options = options || {};
     this.number = 0;    // Message number
     this.autoReconnectRetry = 0;
 
@@ -57,9 +58,9 @@ Tomato.WebSocketClient.prototype.open = function (url) {
         }
     };
 };
-Tomato.WebSocketClient.prototype.send = function (data, option) {
+Tomato.WebSocketClient.prototype.send = function (data) {
     try {
-        this.instance.send(data, option);
+        this.instance.send(data);
     } catch (e) {
         this.instance.emit('error', e);
     }
@@ -76,7 +77,7 @@ Tomato.WebSocketClient.prototype.reconnect = function (e) {
         return;
     }
     var reconnectInterval = this.autoReconnectInterval * (1 + Math.log(this.autoReconnectRetry + 1));
-    console.log(`WebSocketClient: retry in ${reconnectInterval}ms`, e);
+    console.log("WebSocketClient: retry in " + reconnectInterval + "ms", e);
     this.instance.removeEventListener("open", this.instance.onopen);
     this.instance.removeEventListener("message", this.instance.onmessage);
     this.instance.removeEventListener("close", this.instance.onclose);
