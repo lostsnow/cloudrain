@@ -12,17 +12,6 @@
     <!-- force renderer with webkit on 360 browser -->
     <meta name="renderer" content="webkit">
     <title>CloudRain</title>
-
-    <!-- Get some nice monospace fonts -->
-    <link href="//fonts.googleapis.com/css?family=Inconsolata:400,700|Anonymous+Pro:400,700" rel="stylesheet">
-
-    <!-- Latest compiled and minified CSS -->
-    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet">
-
-    <link href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" rel="stylesheet"
-          integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
-
-    <link href="./static/css/app.css" rel="stylesheet">
 </head>
 <body>
 
@@ -33,3 +22,21 @@
         </div>
     </nav>
 </header>
+
+<div class="play">
+    <div class="window">
+        <div id="terminal-box" class="terminal">
+            <!-- Messages will be inserted here. -->
+        </div>
+        <div class="prompt">
+            <div class="connection">
+                <i class="fa fa-circle red" title="Disconnected"></i>
+            </div>
+            <input id="prompt-input" type="text" class="form-control" autocapitalize="off" autofocus spellcheck="false" />
+        </div>
+    </div>
+</div>
+
+<!-- built files will be auto injected -->
+</body>
+</html>

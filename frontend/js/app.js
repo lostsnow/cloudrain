@@ -1,10 +1,16 @@
-jQuery(function ($) {
-    var ansi_up = new AnsiUp;
-    var terminalBox = $("#terminal-box");
-    var promptInput = $('#prompt-input');
+import jQuery from 'jquery';
+import 'bootstrap/dist/css/bootstrap.css';
+import '../css/app.css';
+import AnsiUp from '../js/ansi_up.min.js';
+import '../js/jquery.inputHistory.js';
+require('expose-loader?Tomato!../js/tomato.js');
 
-    var showMessage = function (msg) {
-        var atBottom = (terminalBox.scrollTop() + 40 >= terminalBox[0].scrollHeight - terminalBox.height());
+document.addEventListener("DOMContentLoaded", function () {
+    let ansi_up = new AnsiUp;
+    let terminalBox = $("#terminal-box");
+    let promptInput = $('#prompt-input');
+    let showMessage = function (msg) {
+        let atBottom = (terminalBox.scrollTop() + 40 >= terminalBox[0].scrollHeight - terminalBox.height());
         terminalBox.append(msg);
         // If we were scrolled to the bottom before this call, remain there.
         if (atBottom) {
@@ -16,9 +22,9 @@ jQuery(function ($) {
     if (!("WebSocket" in window)) {
         showMessage("Requires a browser with WebSockets support.");
     } else {
-        var wsc = new Tomato.WebSocketClient();
-        var url = Tomato.websocketUrl;
-        var connectionIcon = $(".prompt .connection i");
+        let wsc = new Tomato.WebSocketClient();
+        let url = process.env.WEBSOCKET_URL;
+        let connectionIcon = $(".prompt .connection i");
         wsc.open(url);
         wsc.onopen = function () {
             showMessage('<p class="text-success">Connected.</p>');
@@ -30,7 +36,7 @@ jQuery(function ($) {
             }
             // @TODO: mxp & gmcp
             try {
-                var resp = JSON.parse(msg.data);
+                let resp = JSON.parse(msg.data);
                 switch (resp.event) {
                     case "text":
                         msg = ansi_up.ansi_to_html(resp.content);
@@ -39,7 +45,7 @@ jQuery(function ($) {
                     case "session":
                         try {
                             /** @var {{sid:string, token:string}} session */
-                            var session = JSON.parse(resp.content);
+                            let session = JSON.parse(resp.content);
                             if (!session.sid || !session.token) {
                                 showMessage("Invalid websocket session");
                                 wsc.autoReconnectInterval = 0;
@@ -48,7 +54,7 @@ jQuery(function ($) {
                             }
                             Tomato.cookie.set("sessionid", session.sid);
                             Tomato.cookie.set("token", session.token);
-                            var query_sid = Tomato.GetUrlParameter('sid');
+                            let query_sid = Tomato.GetUrlParameter('sid');
                             if (query_sid && session.sid !== query_sid) {
                                 window.history.pushState('', '', location.href.replace('sid=' + query_sid, 'sid=' + session.sid));
                             }
@@ -98,11 +104,11 @@ jQuery(function ($) {
         });
 
         terminalBox.on("mouseup", function () {
-            var selection;
+            let selection;
             if (window.getSelection) {
                 selection = window.getSelection();
-            } else if (document.selection) {
-                selection = document.selection.createRange();
+            } else if (window.document.selection) {
+                selection = window.document.selection.createRange();
             }
 
             if (selection.toString() !== "") {
@@ -120,7 +126,7 @@ jQuery(function ($) {
         promptInput.on("keyup", function (e) {
             if (e.key === "Enter") {
                 if (!e.shiftKey) {
-                    var cmd = {
+                    let cmd = {
                         "type": "cmd",
                         "content": this.value + "\n"
                     };

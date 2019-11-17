@@ -23,8 +23,13 @@ _testmain.go
 *.test
 *.prof
 
-# JetBrains project files
+# Editor directories and files
 .idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
 
 # Windows thumbnail cache
 Thumbs.db
@@ -32,6 +37,11 @@ Thumbs.db
 # Mac DS_Store Files
 .DS_Store
 
+/node_modules
+
 # project files
 /config.yml
 /cloudrain
+/public
+/.env
+/.env.prod

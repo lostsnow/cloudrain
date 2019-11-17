@@ -20,9 +20,6 @@ var serveCmd = &cobra.Command{
 
 		r := gin.New()
 
-		r.LoadHTMLGlob("templates/*.html")
-		r.Static("/static", "./static")
-
 		r.GET("/", server.WebHandler)
 		r.GET("/"+viper.GetString("websocket.path"), server.WebsocketHandler)
 

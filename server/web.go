@@ -23,9 +23,8 @@ func WebHandler(c *gin.Context) {
 		u.RawQuery = q.Encode()
 	}
 
-	c.HTML(
-		http.StatusOK, "index.html", gin.H{
-			"debug":        viper.GetBool("web.debug"),
+	c.JSON(
+		http.StatusOK, gin.H{
 			"websocketUrl": u.String(),
 		},
 	)

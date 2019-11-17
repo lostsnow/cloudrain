@@ -1,5 +1,5 @@
 // Tomato object setup
-if (!Tomato) var Tomato = {};
+const Tomato = {};
 
 // @see: https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
 Tomato.WebSocketClient = function (options) {
@@ -19,7 +19,7 @@ Tomato.WebSocketClient = function (options) {
     this.options = options;
 };
 Tomato.WebSocketClient.prototype.open = function (url) {
-    var that = this;
+    let that = this;
     this.url = url;
     this.instance = new WebSocket(this.url);
     this.instance.onopen = function () {
@@ -76,13 +76,13 @@ Tomato.WebSocketClient.prototype.reconnect = function (e) {
     if (this.autoReconnectInterval <= 0 || this.autoReconnectRetry >= this.autoReconnectMaxRetry) {
         return;
     }
-    var reconnectInterval = this.autoReconnectInterval * (1 + Math.log(this.autoReconnectRetry + 1));
+    let reconnectInterval = this.autoReconnectInterval * (1 + Math.log(this.autoReconnectRetry + 1));
     console.log("WebSocketClient: retry in " + reconnectInterval + "ms", e);
     this.instance.removeEventListener("open", this.instance.onopen);
     this.instance.removeEventListener("message", this.instance.onmessage);
     this.instance.removeEventListener("close", this.instance.onclose);
     this.instance.removeEventListener("error", this.instance.onerror);
-    var that = this;
+    let that = this;
     if (this.reconnectTimeout) {
         clearTimeout(this.reconnectTimeout);
     }
@@ -112,19 +112,19 @@ Tomato.WebSocketClient.prototype.onreconnect = function (e) {
 
 Tomato.cookie = {
     set: function (name, value, lifetime) {
-        var expires = "";
+        let expires = "";
         if (lifetime) {
-            var date = new Date();
+            let date = new Date();
             date.setTime(date.getTime() + (lifetime * 1000));
             expires = "; expires=" + date.toUTCString();
         }
         document.cookie = name + "=" + (value || "") + expires + "; path=/";
     },
     get: function (name) {
-        var nameEQ = name + "=";
-        var ca = document.cookie.split(';');
-        for (var i = 0; i < ca.length; i++) {
-            var c = ca[i];
+        let nameEQ = name + "=";
+        let ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
             while (c.charAt(0) === ' ') {
                 c = c.substring(1, c.length);
             }
@@ -140,7 +140,7 @@ Tomato.cookie = {
 };
 
 Tomato.GetUrlParameter = function (sParam) {
-    var sPageURL = window.location.search.substring(1),
+    let sPageURL = window.location.search.substring(1),
         sURLVariables = sPageURL.split('&'),
         sParameterName,
         i;
@@ -172,3 +172,5 @@ Tomato.CopySelect = function () {
     }
     window.document.execCommand("copy");
 };
+
+module.exports = Tomato;

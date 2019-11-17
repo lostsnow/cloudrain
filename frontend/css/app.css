@@ -1,3 +1,5 @@
+@import url("https://use.fontawesome.com/releases/v5.11.2/css/all.css");
+
 button, input, optgroup, select, textarea {
     margin: 0;
     font-family: inherit;
@@ -11,6 +13,7 @@ button, input {
 
 body {
     color: #1a2837;
+    background-color: #fff;
 }
 
 .form-control {
