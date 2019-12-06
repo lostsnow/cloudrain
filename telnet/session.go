@@ -24,6 +24,7 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 type setWindowSizeCommand struct{ width, height byte }
 type atcpCommand string
 type mxpCommand string
+type gmcpCommand string
 
 type Session struct {
 	telnet     *Telnet
@@ -284,6 +285,8 @@ func (sess *Session) handleOption() error {
 		switch second {
 		case OPT_MSSP:
 			return sess.handleDo(second)
+		case OPT_GMCP:
+			return sess.handleDo(second)
 		default:
 			return sess.handleWill(second)
 		}
@@ -347,6 +350,19 @@ func (sess *Session) handleSb(data []byte) error {
 			sess.sendATCPRemoteIp()
 		}
 		return sess.writeSocketRaw("atcp", data[1:])
+
+	case OPT_GMCP:
+		s := strings.SplitN(string(data[1:]), " ", 2)
+		if len(s) != 2 {
+			return nil
+		}
+
+		key := strings.ToLower(s[0])
+		val := strings.TrimSpace(s[1])
+		j := `{"` + key + `":` + val + `}`
+		if err := sess.writeSocketRaw("gmcp", []byte(j)); err != nil {
+			internal.Log.Println(err)
+		}
 
 	case OPT_MXP:
 		return sess.writeSocketRaw("mxp", data[1:])
@@ -451,6 +467,9 @@ func (sess *Session) handleDo(second byte) error {
 	case OPT_MSSP:
 		return sess.writeOption(IAC, DO, second)
 
+	case OPT_GMCP:
+		return sess.writeOption(IAC, DO, second)
+
 	default:
 		return sess.writeOption(IAC, WONT, second)
 	}
@@ -483,6 +502,9 @@ func (sess *Session) handleCommand(cmd interface{}) error {
 	case mxpCommand:
 		return sess.writeSb(OPT_MXP, []byte(cmd))
 
+	case gmcpCommand:
+		return sess.writeSb(OPT_GMCP, []byte(cmd))
+
 	default:
 		return ErrInvalidCommand
 	}
@@ -502,6 +524,10 @@ func (sess *Session) SendAtcp(text string) {
 
 func (sess *Session) SendMxp(text string) {
 	sess.commands <- mxpCommand(text)
+}
+
+func (sess *Session) SendGmcp(text string) {
+	sess.commands <- gmcpCommand(text)
 }
 
 func (sess *Session) initReadChannel(quitCh <-chan bool) {

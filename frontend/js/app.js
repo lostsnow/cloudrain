@@ -76,6 +76,22 @@ document.addEventListener("DOMContentLoaded", function () {
                     case "mxp":
                         console.log("mxp");
                         break;
+                    case "gmcp":
+                        console.log("gmcp:", resp.content);
+                        try {
+                            /** @var {{event:{id:string}}} gmcp */
+                            let gmcp = JSON.parse(resp.content);
+                            console.log(gmcp.event.id);
+                            if (gmcp.event && (gmcp.event.id === "login" || gmcp.event.id === "reconnect")) {
+                                let cmd = {
+                                    "type": "gmcp",
+                                    "content": "request room.info"
+                                };
+                                wsc.send(JSON.stringify(cmd));
+                                return;
+                            }
+                        } catch (e) {}
+                        break;
                     default:
                         break;
                 }
@@ -100,7 +116,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 wsc.open(url);
             } else if ($(this).hasClass("green")) {
                 wsc.close(1000);
+                Tomato.cookie.delete("sessionid");
             }
+            promptInput.trigger("focus");
         });
 
         terminalBox.on("mouseup", function () {
@@ -126,12 +144,19 @@ document.addEventListener("DOMContentLoaded", function () {
         promptInput.on("keyup", function (e) {
             if (e.key === "Enter") {
                 if (!e.shiftKey) {
+                    let type = "cmd";
+                    let content = this.value;
+                    let k = this.value.substr(0, this.value.indexOf(" "));
+                    if (k === "#gmcp") {
+                        type = "gmcp";
+                        content = this.value.substr(this.value.indexOf(" ") + 1).trim();
+                    }
                     let cmd = {
-                        "type": "cmd",
-                        "content": this.value + "\n"
+                        "type": type,
+                        "content": content
                     };
                     try {
-                        showMessage(Tomato.EscapeHtml(cmd.content));
+                        showMessage(Tomato.EscapeHtml(cmd.content) + "\n");
                         wsc.send(JSON.stringify(cmd));
                     } catch (exception) {
                         showMessage("<p class=\"text-warning\">Couldn't send message.</p>");

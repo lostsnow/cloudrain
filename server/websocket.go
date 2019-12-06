@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -222,7 +223,7 @@ func handleCommand(ws *websocket.Conn, sess *telnet.Session) {
 		t := cmd.Type
 		switch t {
 		case "cmd":
-			sess.SendCommand(cmd.Content)
+			sess.SendCommand(cmd.Content + "\n")
 
 		case "naws":
 			var w, h int
@@ -236,6 +237,9 @@ func handleCommand(ws *websocket.Conn, sess *telnet.Session) {
 
 		case "mxp":
 			sess.SendMxp(cmd.Content)
+
+		case "gmcp":
+			sess.SendGmcp(strings.TrimSpace(cmd.Content))
 
 		default:
 			log.Error(telnet.ErrInvalidCommand)
