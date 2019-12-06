@@ -78,19 +78,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         break;
                     case "gmcp":
                         console.log("gmcp:", resp.content);
-                        try {
-                            /** @var {{event:{id:string}}} gmcp */
-                            let gmcp = JSON.parse(resp.content);
-                            console.log(gmcp.event.id);
-                            if (gmcp.event && (gmcp.event.id === "login" || gmcp.event.id === "reconnect")) {
-                                let cmd = {
-                                    "type": "gmcp",
-                                    "content": "request room.info"
-                                };
-                                wsc.send(JSON.stringify(cmd));
-                                return;
-                            }
-                        } catch (e) {}
                         break;
                     default:
                         break;
