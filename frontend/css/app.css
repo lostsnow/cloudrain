@@ -37,7 +37,7 @@ body {
     padding: .5rem 1rem;
     background-color: #000;
     border-radius: 0;
-    font-family: "Noto Sans Mono CJK SC", "XHei Mono", "Inconsolata", Monaco, monospace;
+    font-family: "Noto Sans Mono CJK SC", "PingFang SC", "STHeitiSC-Light", SimHei, NSimSun, monospace;
 }
 
 .navbar-expand-md {
@@ -82,7 +82,7 @@ body {
     color: #c3cbd5;
     white-space: pre-wrap;
     z-index: 2;
-    font-family: "Noto Sans Mono CJK SC", "XHei Mono", "Inconsolata", Monaco, monospace;
+    font-family: "Noto Sans Mono CJK SC", "PingFang SC", "STHeitiSC-Light", SimHei, NSimSun, monospace;
     font-size: 14px;
 }
 
@@ -116,5 +116,5 @@ body {
 .play .prompt #prompt-input {
     flex: 1;
     margin-right: 8px;
-    font-family: "Noto Sans Mono CJK SC", "XHei Mono", "Inconsolata", Monaco, monospace;
+    font-family: "Noto Sans Mono CJK SC", "PingFang SC", "STHeitiSC-Light", SimHei, NSimSun, monospace;
 }
