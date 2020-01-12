@@ -18,10 +18,10 @@ Tomato.WebSocketClient = function (options) {
 
     this.options = options;
 };
-Tomato.WebSocketClient.prototype.open = function (url) {
+Tomato.WebSocketClient.prototype.open = function (url, protocol) {
     let that = this;
     this.url = url;
-    this.instance = new WebSocket(this.url);
+    this.instance = new WebSocket(this.url, protocol);
     this.instance.onopen = function () {
         that.onopen();
         if (that.reconnectTimeout) {
