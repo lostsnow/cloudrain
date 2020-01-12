@@ -161,19 +161,21 @@ document.addEventListener("DOMContentLoaded", function () {
         promptInput.on("keyup", function (e) {
             if (e.key === "Enter") {
                 if (!e.shiftKey) {
-                    let type = "cmd";
-                    let content = this.value;
-                    let k = this.value.substr(0, this.value.indexOf(" "));
-                    if (k === "#gmcp") {
-                        type = "gmcp";
-                        content = this.value.substr(this.value.indexOf(" ") + 1).trim();
-                    }
+                    let value = this.value.trim();
                     let cmd = {
-                        "type": type,
-                        "content": content
+                        "type": "cmd",
+                        "content": value
                     };
+                    let k = value.substr(0, value.indexOf(" "));
+                    if (k === "#gmcp") {
+                        cmd.type = "gmcp";
+                        cmd.content = value.substr(value.indexOf(" ") + 1).trim();
+                    }
+
                     try {
-                        showMessage(Tomato.EscapeHtml(cmd.content) + "\n");
+                        if (cmd.type === "cmd") {
+                            showMessage(Tomato.EscapeHtml(cmd.content) + "\n");
+                        }
                         if (protocol === "ascii") {
                             wsc.send(cmd.content + "\n");
                         } else {
