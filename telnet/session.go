@@ -328,7 +328,9 @@ func (sess *Session) handleSb(data []byte) error {
 		if len(data) < 2 || data[1] != ENVIRON_SEND {
 			return nil
 		}
-		return sess.writeSb(option, []byte{ENVIRON_IS})
+		return sess.writeSb(option, []byte{ENVIRON_IS},
+			[]byte{ENVIRON_VAR}, []byte("REAL_IP"), []byte{ENVIRON_VALUE}, []byte(sess.RemoteIp),
+		)
 
 	case OPT_LINEMODE:
 		if len(data) != 3 || data[1] != LINEMODE_MODE {
