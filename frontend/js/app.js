@@ -3,7 +3,7 @@ import 'bootstrap/dist/css/bootstrap.css';
 import '../css/app.css';
 import AnsiUp from '../js/ansi_up.min.js';
 import '../js/jquery.inputHistory.js';
-require('expose-loader?Tomato!../js/tomato.js');
+require('expose-loader?exposes[]=Tomato!../js/tomato.js');
 
 let ansi_up = new AnsiUp;
 let terminalBox = $("#terminal-box");
