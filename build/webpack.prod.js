@@ -65,7 +65,7 @@ const webpackConfig = {
                 // https://github.com/kangax/html-minifier#options-quick-reference
             },
             // necessary to consistently work with multiple chunks via CommonsChunkPlugin
-            chunksSortMode: 'dependency'
+            chunksSortMode: 'auto'
         }),
         new MiniCssExtractPlugin({
             filename: utils.assetsPath('css/[name].[chunkhash].css'),
