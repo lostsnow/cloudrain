@@ -3,9 +3,10 @@ const webpack = require('webpack');
 const { merge } = require('webpack-merge');
 const baseConfig = require('./webpack.base');
 const config = require('./config');
+const configDev = require('./config/dev.env')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const FriendlyErrorsPlugin = require('friendly-errors-webpack-plugin');
+const FriendlyErrorsPlugin = require('@soda/friendly-errors-webpack-plugin');
 const portfinder = require('portfinder');
 
 const HOST = process.env.HOST;
@@ -38,8 +39,7 @@ const webpackConfig = {
                         options: {
                             // you can specify a publicPath here
                             // by default it uses publicPath in webpackOptions.output
-                            publicPath: '../',
-                            hmr: true
+                            publicPath: '../'
                         },
                     },
                     'css-loader',
@@ -52,10 +52,9 @@ const webpackConfig = {
 
     plugins: [
         new webpack.DefinePlugin({
-            'process.env': require('./config/dev.env')
+            'process.env.NODE_ENV': configDev.NODE_ENV
         }),
         new webpack.HotModuleReplacementPlugin(),
-        new webpack.NamedModulesPlugin(),
         new HtmlWebpackPlugin({
             template: './frontend/index.html',
             filename: 'index.html',
@@ -66,7 +65,11 @@ const webpackConfig = {
             chunkFilename: 'css/[id].css',
             ignoreOrder: false, // Enable to remove warnings about conflicting order
         })
-    ]
+    ],
+
+    optimization: {
+      moduleIds: 'named'
+    }
 };
 
 const devWebpackConfig = merge(baseConfig, webpackConfig);

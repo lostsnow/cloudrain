@@ -12,7 +12,7 @@ module.exports = {
     port: 7171, // can be overwritten by process.env.PORT, if port is in use, a free one will be determined
 
     // https://webpack.js.org/configuration/devtool/#development
-    devtool: 'cheap-module-eval-source-map'
+    devtool: 'eval-cheap-module-source-map'
   },
 
   build: {
