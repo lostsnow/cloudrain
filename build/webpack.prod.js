@@ -5,7 +5,7 @@ const baseConfig = require('./webpack.base');
 const config = require('./config');
 const utils = require('./utils');
 const TerserJSPlugin = require('terser-webpack-plugin');
-const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
@@ -75,7 +75,7 @@ const webpackConfig = {
     ],
 
     optimization: {
-        minimizer: [new TerserJSPlugin({}), new OptimizeCSSAssetsPlugin({})]
+        minimizer: [new TerserJSPlugin({}), new CssMinimizerPlugin({})]
     }
 };
 
