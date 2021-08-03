@@ -3,7 +3,7 @@ module github.com/lostsnow/cloudrain
 go 1.14
 
 require (
-	github.com/gin-gonic/gin v1.7.2
+	github.com/gin-gonic/gin v1.7.3
 	github.com/gorilla/websocket v1.4.2
 	github.com/json-iterator/go v1.1.11
 	github.com/spf13/cobra v1.1.3
