@@ -1,0 +1,59 @@
+{
+  "name": "cloudrain",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "@animxyz/core": "^0.6.4",
+    "@animxyz/vue": "^0.6.4",
+    "core-js": "^3.16.1",
+    "vue": "^3.2.1",
+    "vue-i18n": "^9.2.0-beta.2",
+    "vuex": "^4.0.2"
+  },
+  "devDependencies": {
+    "@intlify/vue-i18n-loader": "^3.0.0",
+    "@vue/cli-plugin-babel": "^5.0.0-beta.3",
+    "@vue/cli-plugin-eslint": "^5.0.0-beta.3",
+    "@vue/cli-service": "^5.0.0-beta.3",
+    "@vue/compiler-sfc": "^3.2.1",
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.32.0",
+    "eslint-plugin-vue": "^7.16.0",
+    "node-sass": "^6.0.1",
+    "pixi-ease": "^3.0.7",
+    "pixi.js": "^6.1.2",
+    "sass": "^1.37.5",
+    "sass-loader": "^12.1.0",
+    "style-loader": "^3.2.1"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/vue3-essential",
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "parser": "babel-eslint"
+    },
+    "rules": {}
+  },
+  "postcss": {
+    "plugins": {
+      "autoprefixer": {}
+    }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "packageManager": "yarn@3.0.0"
+}

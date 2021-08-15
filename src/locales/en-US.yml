@@ -1,0 +1,20 @@
+ui:
+  input-box:
+    click-to-active: 'Hotkey Mode Active, Click/Enter to type.'
+char:
+  you: 'YOU'
+  vitals:
+    health: 'Health'
+    mana: 'Mana'
+    stamina: 'Stamina'
+    sprit: 'Sprit'
+    perception: 'Perception'
+    constitution: 'Constitution'
+    intelligence: 'Intelligence'
+    charisma: 'Charisma'
+map:
+  area:
+    unknown-title: 'Unknown'
+  room:
+    unknown-title: 'Unknown'
+    target: 'Room Targets'
