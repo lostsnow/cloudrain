@@ -1,8 +1,9 @@
 import { createStore } from 'vuex';
 import { Room } from './models';
-const Ansi = require('ansi-to-html');
-const ansi = new Ansi();
+import Ansi from 'ansi-to-html';
 import app from "./main";
+
+const ansi = new Ansi({newline: true, stream: true});
 
 export const store = createStore({
   state() {
@@ -35,22 +36,19 @@ export const store = createStore({
     SOCKET_ONCLOSE(state) {
       if (state.isConnected) {
         state.isConnected = false;
-        state.gameText.push({ id: state.gameText.length, html: '<br>Connection to the game server has been closed.' });
+        state.gameText.push({ id: state.gameText.length, html: app.app.config.globalProperties.$t('socket.closed') });
       } else {
-        state.gameText.push({ id: state.gameText.length, html: 'A connection to the game server could not be established.' });
+        state.gameText.push({ id: state.gameText.length, html: app.app.config.globalProperties.$t('socket.not-established')});
       }
     },
     SOCKET_ONERROR(state, event) {
       console.error(state, event);
     },
-    SOCKET_ONMESSAGE(state, msg) {
+    SOCKET_ONMESSAGE(state, message) {
       try {
-        if (msg.data === "") {
-          return;
-        }
-        let message = JSON.parse(msg.data);
         switch (message.event) {
           case "text":
+            message.content = message.content.replace(/ /g, "&nbsp;")
             this.dispatch("showText", ansi.toHtml(message.content));
             break;
           case "ping":
@@ -109,7 +107,6 @@ export const store = createStore({
       state.gameText.push({
         id: state.gameText.length,
         html: text
-          .replace(/\n/g, "<br>")
       });
     },
 
@@ -163,10 +160,10 @@ export const store = createStore({
         commit('ADD_GAME_TEXT', `${echoCmd}`);
       }
 
-      app.app.config.globalProperties.$socket.send(JSON.stringify({
+      app.app.config.globalProperties.$socket.sendObj({
         type: "cmd",
         content: payload.command
-      }));
+      });
     },
 
     showText: ({ commit }, payload) => {

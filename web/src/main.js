@@ -23,7 +23,7 @@ const app = createApp(App)
 app.use(i18n)
 app.use(store)
 app.use(VueAnimXYZ)
-app.use(VueNativeSock, process.env.VUE_APP_WEBSOCKET_URL, { store: store })
+app.use(VueNativeSock, process.env.VUE_APP_WEBSOCKET_URL, { store: store, format: 'json' })
 
 window['CloudRain'] = app.mount('#app')
 

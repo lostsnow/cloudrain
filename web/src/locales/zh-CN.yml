@@ -18,3 +18,6 @@ map:
   room:
     unknown-title: '未知'
     target: '房间物件'
+socket:
+  closed: '<br>与游戏服务器的连接已被关闭。'
+  not-established: '无法建立与游戏服务器的连接。'
