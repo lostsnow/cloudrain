@@ -6,15 +6,16 @@ on:
   pull_request:
     branches: [ master, develop ]
 
+defaults:
+  run:
+    working-directory: web
+
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [10.x, 12.x, 14.x]
-
     steps:
     - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
