@@ -1,0 +1,20 @@
+ui:
+  input-box:
+    click-to-active: '热键模式激活，点击或回车输入指令。'
+char:
+  you: '你'
+  vitals:
+    health: '气血'
+    mana: '法力'
+    stamina: '体力'
+    sprit: '神念'
+    constitution: '根骨'
+    perception: '神识'
+    intelligence: '悟性'
+    charisma: '魅力'
+map:
+  area:
+    unknown-title: '未知'
+  room:
+    unknown-title: '未知'
+    target: '房间物件'
