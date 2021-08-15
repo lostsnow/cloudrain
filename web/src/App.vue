@@ -123,7 +123,7 @@ export default {
 </script>
 
 <style lang="scss">
-@import "~@/styles/common";
+@import "~@/styles/common.module";
 $backgroundNormal: #111;
 $backgroundLight: #1b1b1b;
 $sidebarWidth: 250px;
