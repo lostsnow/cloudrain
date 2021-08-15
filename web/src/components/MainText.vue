@@ -189,5 +189,6 @@ export default {
   color: #cacaca;
   user-select: text;
   font-size: 13px;
+  font-family: "Noto Sans Mono CJK SC", "PingFang SC", "STHeitiSC-Light", SimHei, NSimSun, monospace;
 }
 </style>

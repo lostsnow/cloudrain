@@ -138,25 +138,6 @@ export default {
       } else if (e.key === "ArrowDown") {
         this.textToSend = this.getNextCommand();
         setTimeout(this.selectAll, 10);
-      } else if (
-        this.textToSend.substr(0, 6).toLowerCase() === "/login" &&
-        this.textToSend.split(" ").length === 3
-      ) {
-        if (e.key === "Backspace") {
-          this.password = this.password.slice(0, this.password.length - 1);
-          this.textToSend = this.textToSend.slice(
-            0,
-            this.textToSend.length - 1
-          );
-          this.textToSend += "*";
-        } else if (e.key !== "Enter" && e.key !== "Escape") {
-          e.preventDefault();
-          e.stopPropagation();
-          this.password += e.key;
-          this.textToSend += "*";
-        }
-      } else {
-        this.password = "";
       }
     },
 

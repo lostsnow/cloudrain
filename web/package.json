@@ -10,6 +10,7 @@
   "dependencies": {
     "@animxyz/core": "^0.6.4",
     "@animxyz/vue3": "^0.6.4",
+    "ansi-to-html": "^0.7.1",
     "core-js": "^3.16.1",
     "vue": "^3.2.1",
     "vue-i18n": "^9.2.0-beta.2",
@@ -29,7 +30,8 @@
     "pixi.js": "^6.1.2",
     "sass": "^1.37.5",
     "sass-loader": "^12.1.0",
-    "style-loader": "^3.2.1"
+    "style-loader": "^3.2.1",
+    "vue-native-websocket-vue3": "^3.1.4"
   },
   "eslintConfig": {
     "root": true,
