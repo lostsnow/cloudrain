@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/json-iterator/go"
-	log "github.com/lostsnow/cloudrain/logger"
+	"github.com/litsea/logger"
 	"github.com/lostsnow/cloudrain/telnet"
 	"github.com/spf13/viper"
 )
@@ -82,7 +82,7 @@ func WebsocketHandler(c *gin.Context) {
 	if ip == "" {
 		ip, _, err = net.SplitHostPort(c.Request.RemoteAddr)
 		if err != nil {
-			log.Error(err)
+			logger.Error(err)
 			return
 		}
 	}
@@ -94,11 +94,11 @@ func WebsocketHandler(c *gin.Context) {
 	up, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		http.Error(c.Writer, "Error creating websocket", 500)
-		log.Error("Error creating websocket: ", err)
+		logger.Error("Error creating websocket: ", err)
 		return
 	}
 
-	log.Info("Opening a proxy for ", c.Request.RemoteAddr)
+	logger.Info("Opening a proxy for ", c.Request.RemoteAddr)
 
 	rw := io.ReadWriteCloser(&wsWrapper{up})
 	me := telnet.NewMultiWriterEntry(rw)
@@ -106,14 +106,14 @@ func WebsocketHandler(c *gin.Context) {
 		lock.Lock()
 		defer lock.Unlock()
 		delete(sessions, s.Id())
-		log.Infof("session ended %s.", plural(len(sessions)))
+		logger.Infof("session ended %s.", plural(len(sessions)))
 		if trace != nil {
 			trace.SessionClosed()
 		}
 	}
 	up.SetCloseHandler(func(code int, text string) error {
 		if err = up.Close(); err != nil {
-			log.Error(err)
+			logger.Error(err)
 		}
 		return nil
 	})
@@ -121,7 +121,7 @@ func WebsocketHandler(c *gin.Context) {
 	var t telnet.Telnet
 	err = viper.UnmarshalKey("telnet", &t)
 	if err != nil {
-		log.Errorf("invalid telnet config: %v", t)
+		logger.Errorf("invalid telnet config: %v", t)
 		return
 	}
 
@@ -134,7 +134,7 @@ func WebsocketHandler(c *gin.Context) {
 		}
 
 		if sid != "" && tokenCookie != "" {
-			log.Infof("try to attach session %s, %s.", sid, plural(len(sessions)))
+			logger.Infof("try to attach session %s, %s.", sid, plural(len(sessions)))
 			if attachToExistingSession(sid, tokenCookie, me) {
 				go handleCommand(up, sessions[sid])
 				return
@@ -151,7 +151,7 @@ func WebsocketHandler(c *gin.Context) {
 		defer lock.Unlock()
 		sessions[sess.Id()] = sess
 
-		log.Infof("session started %s, %s.", sess.Id(), plural(len(sessions)))
+		logger.Infof("session started %s, %s.", sess.Id(), plural(len(sessions)))
 
 		if trace != nil {
 			trace.SessionCreated()
@@ -159,9 +159,9 @@ func WebsocketHandler(c *gin.Context) {
 
 		go handleCommand(up, sess)
 	} else {
-		log.Errorf("error on session start: %s", err.Error())
+		logger.Errorf("error on session start: %s", err.Error())
 		if err = up.Close(); err != nil {
-			log.Error(err)
+			logger.Error(err)
 		}
 	}
 }
@@ -176,15 +176,15 @@ func attachToExistingSession(sid, token string, me *telnet.MultiWriterEntry) boo
 	}
 
 	if sess.Token() != token {
-		log.Errorf("invalid session %s token %s", sid, token)
+		logger.Errorf("invalid session %s token %s", sid, token)
 		return false
 	}
 
 	err := sess.Attach(me)
 	if err == nil {
-		log.Infof("session attached %s, %s", sid, plural(len(sessions)))
+		logger.Infof("session attached %s, %s", sid, plural(len(sessions)))
 	} else {
-		log.Errorf("error on session attach %s: %s", sid, err.Error())
+		logger.Errorf("error on session attach %s: %s", sid, err.Error())
 	}
 
 	return true
@@ -210,13 +210,13 @@ func handleCommand(ws *websocket.Conn, sess *telnet.Session) {
 	for {
 		_, bs, err := ws.ReadMessage()
 		if err != nil {
-			log.Errorf("Error reading from ws(%s): %v", ws.RemoteAddr(), err)
+			logger.Errorf("Error reading from ws(%s): %v", ws.RemoteAddr(), err)
 			break
 		}
 
 		cmd := command{}
 		if err = json.Unmarshal(bs, &cmd); err != nil {
-			log.Error(err)
+			logger.Error(err)
 			continue
 		}
 
@@ -242,7 +242,7 @@ func handleCommand(ws *websocket.Conn, sess *telnet.Session) {
 			sess.SendGmcp(strings.TrimSpace(cmd.Content))
 
 		default:
-			log.Error(telnet.ErrInvalidCommand)
+			logger.Error(telnet.ErrInvalidCommand)
 		}
 	}
 }

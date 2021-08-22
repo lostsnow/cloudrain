@@ -40,7 +40,7 @@ Thumbs.db
 /node_modules
 
 # project files
-/config.yml
+/configs/app.yml
 /cloudrain
 /public
 /.env

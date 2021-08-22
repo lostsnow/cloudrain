@@ -32,3 +32,4 @@ log:
     max-size: 10
     max-days: 7
     max-backups: 10
+log-driver: zap

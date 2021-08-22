@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/lostsnow/cloudrain/logger"
+	"github.com/lostsnow/cloudrain/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -26,35 +26,15 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./configs/app.yml)")
 }
 
 func initConfig() {
-	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
-	} else {
-		viper.SetConfigName("config")
-	}
-
-	viper.AddConfigPath(".")
-
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Printf("Using config file: %v\n", viper.ConfigFileUsed())
-		initLogger()
-	} else {
+	if err := config.ReadConfig(cfgFile, "./configs"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-}
 
-func initLogger() {
-	l := viper.Sub("log")
-
-	if l != nil {
-		if err := logger.NewLogger(l, logger.InstanceZapLogger); err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		logger.Info("Logger initialized")
-	}
+	fmt.Printf("Using config file: %v\n", viper.ConfigFileUsed())
+	config.InitLogger()
 }

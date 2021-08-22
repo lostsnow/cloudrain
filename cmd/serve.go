@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	log "github.com/lostsnow/cloudrain/logger"
+	"github.com/litsea/logger"
 	"github.com/lostsnow/cloudrain/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -24,15 +24,15 @@ var serveCmd = &cobra.Command{
 		r.GET("/"+viper.GetString("websocket.path"), server.WebsocketHandler)
 
 		addr := viper.GetString("web.host") + ":" + strconv.Itoa(viper.GetInt("web.port"))
-		log.Info("Listening on ", addr)
+		logger.Info("Listening on ", addr)
 		err := r.Run(addr)
 		if err != nil {
-			log.Fatal("Listen error: ", err)
+			logger.Fatal("Listen error: ", err)
 		}
 
 		defer func() {
 			if err := recover(); err != nil {
-				log.Errorf("panic: %s", err)
+				logger.Errorf("panic: %s", err)
 			}
 		}()
 	},
