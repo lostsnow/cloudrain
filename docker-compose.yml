@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+
+  app:
+    image: cloudrain
+    build: .
+    restart: always
+    ports:
+      - '7071:7071'
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./configs:/app/configs
+      - ./tmp:/app/tmp
+    working_dir: /app
+    command: |
+      serve
