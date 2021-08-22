@@ -21,5 +21,7 @@ jobs:
     - name: Get dependencies
       run: |
         go get -v -t -d ./...
+        mkdir web/dist
+        touch web/dist/placeholder.embed
     - name: Build
       run: go build -v .
