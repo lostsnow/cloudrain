@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/litsea/logger"
 	"github.com/lostsnow/cloudrain/server"
 	"github.com/spf13/cobra"
@@ -14,27 +16,22 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Serve websocket and web frontend",
 	Run: func(cmd *cobra.Command, args []string) {
-		if !viper.GetBool("web.debug") {
-			gin.SetMode(gin.ReleaseMode)
-		}
+		e := echo.New()
+		e.Debug = viper.GetBool("web.debug")
 
-		r := gin.New()
+		// Middleware
+		e.Use(middleware.Logger())
+		e.Use(middleware.Recover())
+		e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+			Root:       "/web/dist/",
+			Filesystem: http.FS(assets.Web),
+		}))
 
-		r.GET("/", server.WebHandler)
-		r.GET("/"+viper.GetString("websocket.path"), server.WebsocketHandler)
+		e.GET("/"+viper.GetString("websocket.path"), server.WebsocketHandler)
 
 		addr := viper.GetString("web.host") + ":" + strconv.Itoa(viper.GetInt("web.port"))
 		logger.Info("Listening on ", addr)
-		err := r.Run(addr)
-		if err != nil {
-			logger.Fatal("Listen error: ", err)
-		}
-
-		defer func() {
-			if err := recover(); err != nil {
-				logger.Errorf("panic: %s", err)
-			}
-		}()
+		e.Logger.Fatal(e.Start(addr))
 	},
 }
 
