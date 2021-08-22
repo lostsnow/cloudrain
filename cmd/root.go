@@ -1,15 +1,19 @@
 package cmd
 
 import (
+	"embed"
 	"fmt"
 	"os"
 
-	"github.com/lostsnow/cloudrain/config"
+	"github.com/lostsnow/cloudrain/internal/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
+var (
+	cfgFile string
+	assets  *Assets
+)
 
 var rootCmd = &cobra.Command{
 	Use:   "cloudrain",
@@ -17,7 +21,12 @@ var rootCmd = &cobra.Command{
 	Long:  `CloudRain`,
 }
 
-func Execute() {
+type Assets struct {
+	Web embed.FS
+}
+
+func Execute(as *Assets) {
+	assets = as
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

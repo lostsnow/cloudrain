@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/labstack/echo/v4"
 	"github.com/litsea/logger"
 	"github.com/lostsnow/cloudrain/telnet"
 	"github.com/spf13/viper"
@@ -22,6 +21,10 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 var (
 	lock     sync.RWMutex
 	sessions = make(map[string]*telnet.Session)
+)
+
+var (
+	upgrader = websocket.Upgrader{}
 )
 
 type sessionTrace interface {
@@ -56,49 +59,34 @@ func (wsw *wsWrapper) Read(p []byte) (n int, err error) {
 	}
 }
 
-func WebsocketHandler(c *gin.Context) {
-	if c.Request.URL.Path != "/"+viper.GetString("websocket.path") {
-		http.Error(c.Writer, "Not found", 404)
-		return
-	}
-	if c.Request.Method != "GET" {
-		http.Error(c.Writer, "Method not allowed", 405)
-		return
-	}
-
+func WebsocketHandler(c echo.Context) error {
 	var sidCookie string
-	cookie, err := c.Request.Cookie("sessionid")
+	cookie, err := c.Cookie("sessionid")
 	if err == nil {
 		sidCookie = cookie.Value
 	}
 	var tokenCookie string
-	cookie, err = c.Request.Cookie("token")
+	cookie, err = c.Cookie("token")
 	if err == nil {
 		tokenCookie = cookie.Value
 	}
 
 	var ip string
-	ip = c.Request.Header.Get("X-REAL-IP")
+	ip = c.Request().Header.Get("X-REAL-IP")
 	if ip == "" {
-		ip, _, err = net.SplitHostPort(c.Request.RemoteAddr)
+		ip, _, err = net.SplitHostPort(c.Request().RemoteAddr)
 		if err != nil {
-			logger.Error(err)
-			return
+			return err
 		}
 	}
 
-	upgrader := websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool { return true },
-	}
-
-	up, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	up, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
-		http.Error(c.Writer, "Error creating websocket", 500)
 		logger.Error("Error creating websocket: ", err)
-		return
+		return err
 	}
 
-	logger.Info("Opening a proxy for ", c.Request.RemoteAddr)
+	logger.Info("Opening a proxy for ", c.Request().RemoteAddr)
 
 	rw := io.ReadWriteCloser(&wsWrapper{up})
 	me := telnet.NewMultiWriterEntry(rw)
@@ -122,13 +110,13 @@ func WebsocketHandler(c *gin.Context) {
 	err = viper.UnmarshalKey("telnet", &t)
 	if err != nil {
 		logger.Errorf("invalid telnet config: %v", t)
-		return
+		return err
 	}
 
 	var sess *telnet.Session
 	var sid string
 	if t.MultiConnection {
-		sid = c.Request.URL.Query().Get("sid")
+		sid = c.QueryParam("sid")
 		if sid == "" && sidCookie != "" {
 			sid = sidCookie
 		}
@@ -137,7 +125,7 @@ func WebsocketHandler(c *gin.Context) {
 			logger.Infof("try to attach session %s, %s.", sid, plural(len(sessions)))
 			if attachToExistingSession(sid, tokenCookie, me) {
 				go handleCommand(up, sessions[sid])
-				return
+				return nil
 			} else {
 				sid = ""
 			}
@@ -164,6 +152,8 @@ func WebsocketHandler(c *gin.Context) {
 			logger.Error(err)
 		}
 	}
+
+	return nil
 }
 
 func attachToExistingSession(sid, token string, me *telnet.MultiWriterEntry) bool {
