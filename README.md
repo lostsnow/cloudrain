@@ -49,3 +49,11 @@ curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh | sh
 
 air
 ```
+
+### Docker
+
+```shell
+docker-compose build --build-arg GOPROXY="https://goproxy.cn,direct" \
+  --build-arg VUE_APP_WEBSOCKET_URL=ws://localhost:7071/ws
+docker-compose up -d
+```

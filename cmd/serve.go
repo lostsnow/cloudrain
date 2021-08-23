@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -27,12 +28,25 @@ var serveCmd = &cobra.Command{
 			Filesystem: http.FS(assets.Web),
 		}))
 
+		e.GET("/app.config.js", configJsHandler)
 		e.GET("/"+viper.GetString("websocket.path"), server.WebsocketHandler)
 
 		addr := viper.GetString("web.host") + ":" + strconv.Itoa(viper.GetInt("web.port"))
 		logger.Info("Listening on ", addr)
 		e.Logger.Fatal(e.Start(addr))
 	},
+}
+
+func configJsHandler(c echo.Context) error {
+	js := fmt.Sprintf(`// eslint-disable-next-line no-unused-vars
+const config = (() => {
+  return {
+    "VUE_APP_WEBSOCKET_URL": "%s://%s:%d/%s",
+  };
+})();`, viper.GetString("websocket.scheme"), viper.GetString("websocket.host"),
+		viper.GetInt("websocket.port"), viper.GetString("websocket.path"))
+
+	return c.HTML(http.StatusOK, js)
 }
 
 func init() {

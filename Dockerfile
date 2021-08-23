@@ -3,9 +3,6 @@ FROM node:14-alpine3.14 as node-builder
 COPY ./web /build
 WORKDIR /build
 
-ARG VUE_APP_WEBSOCKET_URL="ws://localhost:7071/ws"
-ENV VUE_APP_WEBSOCKET_URL ${VUE_APP_WEBSOCKET_URL}
-
 RUN npm install \
     && npm run build
 
@@ -19,7 +16,7 @@ COPY --from=node-builder /build/dist ./web
 ARG GOPROXY="https://proxy.golang.org"
 
 ENV GO111MODULE=on
-RUN GOPROXY=${GOPROXY} CGO_ENABLE=0 GOOS=linux GOARCH=amd64 go build -o /build/cloudrain
+RUN GOPROXY=${GOPROXY} CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /build/cloudrain
 
 FROM debian:buster
 
@@ -30,4 +27,5 @@ COPY --from=go-builder /build/cloudrain .
 VOLUME /app/configs
 VOLUME /app/tmp
 
-ENTRYPOINT /app/cloudrain
+ENTRYPOINT ["/app/cloudrain"]
+CMD ["serve"]

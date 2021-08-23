@@ -13,5 +13,3 @@ services:
       - ./configs:/app/configs
       - ./tmp:/app/tmp
     working_dir: /app
-    command: |
-      serve
