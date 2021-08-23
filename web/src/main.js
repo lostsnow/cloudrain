@@ -23,7 +23,14 @@ const app = createApp(App)
 app.use(i18n)
 app.use(store)
 app.use(VueAnimXYZ)
-app.use(VueNativeSock, process.env.VUE_APP_WEBSOCKET_URL, { store: store, format: 'json' })
+
+let websocketUrl = process.env.VUE_APP_WEBSOCKET_URL
+// eslint-disable-next-line no-undef
+if (typeof config !== 'undefined' && config.VUE_APP_WEBSOCKET_URL) {
+  // eslint-disable-next-line no-undef
+  websocketUrl = config.VUE_APP_WEBSOCKET_URL
+}
+app.use(VueNativeSock, websocketUrl, { store: store, format: 'json' })
 
 window['CloudRain'] = app.mount('#app')
 
