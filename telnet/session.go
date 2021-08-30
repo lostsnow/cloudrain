@@ -6,20 +6,18 @@ import (
 	"compress/zlib"
 	"crypto/rand"
 	"encoding/base32"
+	"encoding/json"
 	"io"
 	"net"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/json-iterator/go"
 	"github.com/lostsnow/cloudrain/charset"
 	"github.com/lostsnow/cloudrain/telnet/internal"
 )
 
 const PingInterval = 5 * time.Second
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type setWindowSizeCommand struct{ width, height byte }
 type atcpCommand string

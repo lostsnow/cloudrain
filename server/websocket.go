@@ -1,22 +1,21 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/gorilla/websocket"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/labstack/echo/v4"
 	"github.com/litsea/logger"
 	"github.com/lostsnow/cloudrain/telnet"
 	"github.com/spf13/viper"
 )
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 var (
 	lock     sync.RWMutex
@@ -24,7 +23,9 @@ var (
 )
 
 var (
-	upgrader = websocket.Upgrader{}
+	upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
 )
 
 type sessionTrace interface {
