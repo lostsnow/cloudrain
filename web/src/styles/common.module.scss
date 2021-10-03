@@ -24,6 +24,8 @@ $bg-color-light3: rgb(38, 59, 74);
 $bg-color-dark: rgb(3, 5, 7);
 $defaultBorder: solid 1px $bg-color-light2;
 
+$monoFont: "Noto Sans Mono CJK SC", "PingFang SC", "STHeitiSC-Light", SimHei, NSimSun, monospace;
+
 /* Mixins */
 @mixin defaultBorderImage {
     border: $defaultBorder;

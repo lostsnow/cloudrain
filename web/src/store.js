@@ -1,9 +1,6 @@
 import { createStore } from 'vuex';
 import { Room } from './models';
-import Ansi from 'ansi-to-html';
 import app from "./main";
-
-const ansi = new Ansi({newline: true, stream: true});
 
 export const store = createStore({
   state() {
@@ -15,7 +12,7 @@ export const store = createStore({
       mudVesion: 'v0.1.0',
       pingTime: 0,
       settings: { lines: 100 },
-      gameText: [],
+      gameText: "",
       allowGlobalHotkeys: true,
       forceInputFocus: { forced: false, text: '' },
       commandDictionary: [],
@@ -36,9 +33,9 @@ export const store = createStore({
     SOCKET_ONCLOSE(state) {
       if (state.isConnected) {
         state.isConnected = false;
-        state.gameText.push({ id: state.gameText.length, html: app.app.config.globalProperties.$t('socket.closed') });
+        state.gameText = app.app.config.globalProperties.$t('socket.closed');
       } else {
-        state.gameText.push({ id: state.gameText.length, html: app.app.config.globalProperties.$t('socket.not-established')});
+        state.gameText = app.app.config.globalProperties.$t('socket.not-established');
       }
     },
     SOCKET_ONERROR(state, event) {
@@ -48,8 +45,7 @@ export const store = createStore({
       try {
         switch (message.event) {
           case "text":
-            message.content = message.content.replace(/ /g, "&nbsp;")
-            this.dispatch("showText", ansi.toHtml(message.content));
+            this.dispatch("showText", message.content);
             break;
           case "ping":
             console.log("ping...");
@@ -104,10 +100,7 @@ export const store = createStore({
       state.commandHistory.push(command);
     },
     ADD_GAME_TEXT: (state, text) => {
-      state.gameText.push({
-        id: state.gameText.length,
-        html: text
-      });
+      state.gameText = text;
     },
 
     SET_MINIMAP_DATA: (state, minimapData) => {
@@ -157,7 +150,7 @@ export const store = createStore({
 
       let echoCmd = payload.command;
       if (typeof payload.hidden !== 'boolean' || !payload.hidden) {
-        commit('ADD_GAME_TEXT', `${echoCmd}`);
+        commit('ADD_GAME_TEXT', `${echoCmd}\r\n`);
       }
 
       app.app.config.globalProperties.$socket.sendObj({

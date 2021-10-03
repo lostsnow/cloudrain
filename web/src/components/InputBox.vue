@@ -167,7 +167,7 @@ $height: 35px;
   border: 0;
   height: $height;
   color: $defaultTextColor;
-  font-family: "Montserrat", sans-serif;
+  font-family: $monoFont;
   font-weight: 500;
   font-size: 13px;
 }

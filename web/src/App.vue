@@ -3,7 +3,7 @@
     <div class="container-wrapper">
       <div class="container-left">
         <div class="container-maintext">
-          <MainText :windowHeight="windowHeight" />
+          <MainText :windowWidth="windowWidth" :windowHeight="windowHeight" />
         </div>
         <div class="container-input">
           <InputBox />

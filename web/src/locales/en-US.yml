@@ -19,5 +19,5 @@ map:
     unknown-title: 'Unknown'
     target: 'Room Targets'
 socket:
-  closed: '<br>Connection to the game server has been closed.'
+  closed: 'Connection to the game server has been closed.'
   not-established: 'A connection to the game server could not be established.'
