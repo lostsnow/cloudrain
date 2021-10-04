@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"compress/zlib"
-	"crypto/rand"
-	"encoding/base32"
 	"encoding/json"
 	"io"
 	"net"
@@ -27,15 +25,12 @@ type gmcpCommand string
 type Session struct {
 	telnet     *Telnet
 	conn       net.Conn
-	id         string
-	token      string
 	writer     *multiWriter
 	readCh     <-chan byte
 	commands   chan<- interface{}
 	errCh      chan<- error
 	buf        []byte
 	sbBuf      []byte
-	latestBuf  []byte
 	reader     *bufio.Reader
 	termTypeIx int
 	debugBuf   []byte
@@ -48,23 +43,12 @@ type message struct {
 	Content string `json:"content"`
 }
 
-type sessionIdentity struct {
-	Sid   string `json:"sid"`
-	Token string `json:"token"`
+type gmcpMessage struct {
+	Key   string      `json:"key"`
+	Value interface{} `json:"value"`
 }
 
-func (t *Telnet) NewSession(sid string, rwc io.ReadWriteCloser, onClose func(s *Session)) (sess *Session, err error) {
-	if sid == "" {
-		sid, err = generateId()
-		if err != nil {
-			return nil, err
-		}
-	}
-	token, err := generateId()
-	if err != nil {
-		return nil, err
-	}
-
+func (t *Telnet) NewSession(rwc io.ReadWriteCloser, onClose func(s *Session)) (sess *Session, err error) {
 	mw := NewMultiWriter(rwc)
 
 	conn, err := t.Dial()
@@ -84,18 +68,7 @@ func (t *Telnet) NewSession(sid string, rwc io.ReadWriteCloser, onClose func(s *
 		sbBuf:    make([]byte, 0, 64),
 		reader:   bufio.NewReader(conn),
 		debugBuf: make([]byte, 0, 256),
-		id:       sid,
-		token:    token,
 		commands: commandCh,
-	}
-
-	si := &sessionIdentity{
-		Sid:   sid,
-		Token: token,
-	}
-	siBytes, err := json.Marshal(si)
-	if err != nil {
-		return nil, err
 	}
 
 	go func() {
@@ -109,9 +82,6 @@ func (t *Telnet) NewSession(sid string, rwc io.ReadWriteCloser, onClose func(s *
 		defer close(quitCh)
 
 		sess.initReadChannel(quitCh)
-		if err := sess.writeSocketRaw("session", siBytes); err != nil {
-			internal.Log.Println(err)
-		}
 
 	ReadLoop:
 		for {
@@ -166,37 +136,6 @@ func (t *Telnet) NewSession(sid string, rwc io.ReadWriteCloser, onClose func(s *
 	}()
 
 	return sess, nil
-}
-
-func (sess *Session) Attach(me *MultiWriterEntry) error {
-	if err := sess.writer.attach(me.writer); err != nil {
-		if e := me.writer.Close(); e != nil {
-			internal.Log.Println(e)
-		}
-		return err
-	}
-
-	if len(sess.latestBuf) > 0 {
-		msg := &message{
-			Event:   "text",
-			Content: string(sess.latestBuf),
-		}
-		msgBytes, err := json.Marshal(msg)
-		if err != nil {
-			return err
-		}
-
-		_, err = sess.writer.Write(msgBytes)
-		if err != nil {
-			return err
-		}
-		_, err = sess.writer.Write([]byte(""))
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (sess *Session) handleRead(b byte) error {
@@ -352,15 +291,27 @@ func (sess *Session) handleSb(data []byte) error {
 		return sess.writeSocketRaw("atcp", data[1:])
 
 	case OPT_GMCP:
-		s := strings.SplitN(string(data[1:]), " ", 2)
+		s := bytes.SplitN(data[1:], []byte(" "), 2)
 		if len(s) != 2 {
 			return nil
 		}
 
-		key := strings.ToLower(s[0])
-		val := strings.TrimSpace(s[1])
-		j := `{"` + key + `":` + val + `}`
-		if err := sess.writeSocketRaw("gmcp", []byte(j)); err != nil {
+		var v interface{}
+		err = json.Unmarshal(bytes.TrimSpace(s[1]), &v)
+		if err != nil {
+			internal.Log.Println(err)
+			return nil
+		}
+		msg := gmcpMessage{
+			Key:   string(s[0]),
+			Value: v,
+		}
+
+		j, err := json.Marshal(msg)
+		if err != nil {
+			internal.Log.Println(err)
+		}
+		if err := sess.writeSocketRaw("gmcp", j); err != nil {
 			internal.Log.Println(err)
 		}
 
@@ -601,17 +552,6 @@ func (sess *Session) writeSocketRaw(event string, data []byte) error {
 		return err
 	}
 
-	if event == "text" {
-		keepLines := 1000
-		latestBuf := append(sess.latestBuf, data...)
-		bs := bytes.Split(latestBuf, []byte("\n"))
-		if len(bs) <= keepLines {
-			sess.latestBuf = latestBuf
-		} else {
-			sess.latestBuf = bytes.Join(bs[len(bs)-keepLines:], []byte("\n"))
-		}
-	}
-
 	msg := &message{
 		Event:   event,
 		Content: string(data),
@@ -695,21 +635,4 @@ func (sess *Session) testPing() error {
 		sess.lastWrite = now
 	}
 	return nil
-}
-
-func (sess *Session) Token() string {
-	return sess.token
-}
-
-func (sess *Session) Id() string {
-	return sess.id
-}
-
-func generateId() (string, error) {
-	idEncoding := base32.NewEncoding("123456789abcdefghijklmnopqrstuvw")
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return "", nil
-	}
-	return strings.TrimRight(idEncoding.EncodeToString(b), "="), nil
 }

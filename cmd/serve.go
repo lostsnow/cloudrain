@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/litsea/logger"
 	"github.com/lostsnow/cloudrain/server"
+	"github.com/lostsnow/cloudrain/telnet"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -27,6 +28,8 @@ var serveCmd = &cobra.Command{
 			Root:       "/web/dist/",
 			Filesystem: http.FS(assets.Web),
 		}))
+
+		server.SetSessionTracer(telnet.NewSessionTrace())
 
 		e.GET("/app.config.js", configJsHandler)
 		e.GET("/"+viper.GetString("websocket.path"), server.WebsocketHandler)

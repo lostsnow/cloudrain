@@ -6,9 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -18,8 +16,7 @@ import (
 )
 
 var (
-	lock     sync.RWMutex
-	sessions = make(map[string]*telnet.Session)
+	trace telnet.SessionTracer
 )
 
 var (
@@ -28,15 +25,12 @@ var (
 	}
 )
 
-type sessionTrace interface {
-	SessionCreated()
-	SessionClosed()
-}
-
-var trace sessionTrace
-
 type wsWrapper struct {
 	*websocket.Conn
+}
+
+func SetSessionTracer(t telnet.SessionTracer) {
+	trace = t
 }
 
 func (wsw *wsWrapper) Write(p []byte) (n int, err error) {
@@ -61,17 +55,7 @@ func (wsw *wsWrapper) Read(p []byte) (n int, err error) {
 }
 
 func WebsocketHandler(c echo.Context) error {
-	var sidCookie string
-	cookie, err := c.Cookie("sessionid")
-	if err == nil {
-		sidCookie = cookie.Value
-	}
-	var tokenCookie string
-	cookie, err = c.Cookie("token")
-	if err == nil {
-		tokenCookie = cookie.Value
-	}
-
+	var err error
 	var ip string
 	ip = c.Request().Header.Get("X-REAL-IP")
 	if ip == "" {
@@ -90,14 +74,9 @@ func WebsocketHandler(c echo.Context) error {
 	logger.Info("Opening a proxy for ", c.Request().RemoteAddr)
 
 	rw := io.ReadWriteCloser(&wsWrapper{up})
-	me := telnet.NewMultiWriterEntry(rw)
 	onClose := func(s *telnet.Session) {
-		lock.Lock()
-		defer lock.Unlock()
-		delete(sessions, s.Id())
-		logger.Infof("session ended %s.", plural(len(sessions)))
 		if trace != nil {
-			trace.SessionClosed()
+			trace.Closed(s)
 		}
 	}
 	up.SetCloseHandler(func(code int, text string) error {
@@ -114,36 +93,12 @@ func WebsocketHandler(c echo.Context) error {
 		return err
 	}
 
-	var sess *telnet.Session
-	var sid string
-	if t.MultiConnection {
-		sid = c.QueryParam("sid")
-		if sid == "" && sidCookie != "" {
-			sid = sidCookie
-		}
-
-		if sid != "" && tokenCookie != "" {
-			logger.Infof("try to attach session %s, %s.", sid, plural(len(sessions)))
-			if attachToExistingSession(sid, tokenCookie, me) {
-				go handleCommand(up, sessions[sid])
-				return nil
-			} else {
-				sid = ""
-			}
-		}
-	}
-
-	sess, err = t.NewSession(sid, rw, onClose)
+	sess, err := t.NewSession(rw, onClose)
 	if err == nil {
 		sess.RemoteIp = ip
-		lock.Lock()
-		defer lock.Unlock()
-		sessions[sess.Id()] = sess
-
-		logger.Infof("session started %s, %s.", sess.Id(), plural(len(sessions)))
 
 		if trace != nil {
-			trace.SessionCreated()
+			trace.Created(sess)
 		}
 
 		go handleCommand(up, sess)
@@ -155,40 +110,6 @@ func WebsocketHandler(c echo.Context) error {
 	}
 
 	return nil
-}
-
-func attachToExistingSession(sid, token string, me *telnet.MultiWriterEntry) bool {
-	lock.RLock()
-	defer lock.RUnlock()
-
-	sess, ok := sessions[sid]
-	if !ok {
-		return false
-	}
-
-	if sess.Token() != token {
-		logger.Errorf("invalid session %s token %s", sid, token)
-		return false
-	}
-
-	err := sess.Attach(me)
-	if err == nil {
-		logger.Infof("session attached %s, %s", sid, plural(len(sessions)))
-	} else {
-		logger.Errorf("error on session attach %s: %s", sid, err.Error())
-	}
-
-	return true
-}
-
-func plural(value int) string {
-	if value == 0 {
-		return "(no active sessions)"
-	} else if value == 1 {
-		return "(1 active session)"
-	} else {
-		return "(" + strconv.Itoa(value) + " active sessions)"
-	}
 }
 
 type command struct {
