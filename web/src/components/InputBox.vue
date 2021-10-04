@@ -107,6 +107,7 @@ export default {
 
       this.$store.dispatch("sendCommand", {
         command: command,
+        display: true,
       });
 
       this.textToSend = "";

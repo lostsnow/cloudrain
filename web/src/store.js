@@ -8,11 +8,13 @@ export const store = createStore({
     return {
       isProduction: process.env.NODE_ENV === "production",
       isConnected: false,
+      isLogin: false,
       reconnectError: false,
       mudName: 'CloudRain',
       mudVesion: 'v0.1.0',
       pingTime: 0,
       settings: { lines: 100 },
+      gameTextHistory: [],
       gameText: "",
       allowGlobalHotkeys: true,
       forceInputFocus: { forced: false, text: '' },
@@ -23,13 +25,15 @@ export const store = createStore({
       areaTitle: '',
       roomTitle: '',
       roomObjects: [],
-      autoLoginToken: "",
-      playerInfo: { uuid: '', name: '' },
+      userId: "",
+      autoLoginToken: { id: '', token: '' },
+      playerInfo: { id: '', name: '', short: '' },
     }
   },
   mutations: {
     SOCKET_ONOPEN(state) {
       state.isConnected = true;
+      state.isLogin = false;
     },
     SOCKET_ONCLOSE(state) {
       if (state.isConnected) {
@@ -38,6 +42,7 @@ export const store = createStore({
       } else {
         state.gameText = app.app.config.globalProperties.$t('socket.not-established');
       }
+      state.isLogin = false;
     },
     SOCKET_ONERROR(state, event) {
       console.error(state, event);
@@ -47,9 +52,6 @@ export const store = createStore({
         switch (message.event) {
           case "text":
             this.dispatch("showText", message.content);
-            break;
-          case "ping":
-            console.log("ping...");
             break;
           case "gmcp":
             ParseGMCP(message.content);
@@ -66,6 +68,25 @@ export const store = createStore({
     },
     SOCKET_RECONNECT_ERROR(state) {
       state.reconnectError = true;
+    },
+
+    INIT_LOGIN(state) {
+      try {
+        let token = localStorage.getItem('autoLoginToken');
+        if (token) {
+          state.autoLoginToken = JSON.parse(token);
+        }
+      } catch (error) {
+        console.log("invalid login token");
+      }
+    },
+
+    SET_LOGIN_TOKEN(state, token) {
+      if (token.id && token.token) {
+        localStorage.setItem('autoLoginToken', JSON.stringify(token));
+        state.autoLoginToken = token;
+        state.isLogin = true;
+      }
     },
 
     SET_ALLOW_GLOBAL_HOTKEYS: (state, allow) => {
@@ -128,15 +149,19 @@ export const store = createStore({
         return;
       }
 
-      commit('APPEND_COMMAND_HISTORY', payload.command);
-
       let echoCmd = payload.command;
-      if (typeof payload.hidden !== 'boolean' || !payload.hidden) {
+      if (typeof payload.display === 'boolean' && payload.display) {
+        commit('APPEND_COMMAND_HISTORY', payload.command);
         commit('ADD_GAME_TEXT', `${echoCmd}\r\n`);
       }
 
+      let cmdType = "cmd";
+      if (payload.type) {
+        cmdType = payload.type;
+      }
+
       app.app.config.globalProperties.$socket.sendObj({
-        type: "cmd",
+        type: cmdType,
         content: payload.command
       });
     },

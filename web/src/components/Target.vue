@@ -23,7 +23,7 @@
         <div
           class="you"
           :class="{ selected: uuid === objectTargetUUID }"
-          v-if="uuid === playerInfo.uuid"
+          v-if="uuid === playerInfo.id"
         >
           {{ $t('char.you') }}
         </div>
