@@ -6,7 +6,7 @@ WORKDIR /build
 RUN npm install \
     && npm run build
 
-FROM golang:1.16-alpine as go-builder
+FROM golang:1.17-alpine3.14 as go-builder
 
 COPY . /build
 WORKDIR /build

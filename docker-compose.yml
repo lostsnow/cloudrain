@@ -3,7 +3,7 @@ version: '3.8'
 services:
 
   app:
-    image: cloudrain
+    image: ghcr.io/lostsnow/cloudrain
     build: .
     restart: always
     ports:
