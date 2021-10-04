@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/lostsnow/cloudrain/internal/version"
 	"github.com/lostsnow/cloudrain/telnet/internal"
 )
 
@@ -18,19 +19,20 @@ var (
 )
 
 var (
-	TermTypes             = [][]byte{[]byte("CloudRain"), []byte("MTTS 141")} // MTTS_ANSI | MTTS_UTF8 | MTTS_256_COLORS | MTTS_PROXY (1+4+8+128)
+	TermTypes             = [][]byte{[]byte(version.AppName), []byte("MTTS 141")} // MTTS_ANSI | MTTS_UTF8 | MTTS_256_COLORS | MTTS_PROXY (1+4+8+128)
 	MaxSessionConnections = 5
 )
 
 type Telnet struct {
-	Debug           bool
-	Host            string
-	Port            int
-	Charset         string
-	MultiConnection bool
-	Secure          bool
-	SecureVerify    bool
-	SendRemoteIp    bool
+	Debug        bool
+	Host         string
+	Port         int
+	Charset      string
+	GmcpSecret   string
+	Secure       bool
+	SecureVerify bool
+	SendClientIp bool
+	ClientIp     string
 }
 
 func (t *Telnet) Dial() (conn net.Conn, err error) {

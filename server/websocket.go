@@ -92,11 +92,10 @@ func WebsocketHandler(c echo.Context) error {
 		logger.Errorf("invalid telnet config: %v", t)
 		return err
 	}
+	t.ClientIp = ip
 
 	sess, err := t.NewSession(rw, onClose)
 	if err == nil {
-		sess.RemoteIp = ip
-
 		if trace != nil {
 			trace.Created(sess)
 		}
@@ -122,6 +121,7 @@ func handleCommand(ws *websocket.Conn, sess *telnet.Session) {
 	for {
 		_, bs, err := ws.ReadMessage()
 		if err != nil {
+			sess.Close()
 			logger.Errorf("Error reading from ws(%s): %v", ws.RemoteAddr(), err)
 			break
 		}

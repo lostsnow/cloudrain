@@ -67,7 +67,7 @@ const (
 	CHARSET_ACCEPTED = 2
 	CHARSET_REJECTED = 3
 
-	// OPT_MSSP
+	// OPT_MSDP
 	MSDP_VAR         = 1
 	MSDP_VAL         = 2
 	MSDP_TABLE_OPEN  = 3

@@ -9,13 +9,13 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/lostsnow/cloudrain/charset"
+	"github.com/lostsnow/cloudrain/internal/version"
 	"github.com/lostsnow/cloudrain/telnet/internal"
 )
-
-const PingInterval = 5 * time.Second
 
 type setWindowSizeCommand struct{ width, height byte }
 type atcpCommand string
@@ -23,19 +23,21 @@ type mxpCommand string
 type gmcpCommand string
 
 type Session struct {
-	telnet     *Telnet
-	conn       net.Conn
-	writer     *multiWriter
-	readCh     <-chan byte
-	commands   chan<- interface{}
-	errCh      chan<- error
-	buf        []byte
-	sbBuf      []byte
-	reader     *bufio.Reader
-	termTypeIx int
-	debugBuf   []byte
-	lastWrite  time.Time
-	RemoteIp   string
+	telnet           *Telnet
+	conn             net.Conn
+	writer           *multiWriter
+	readCh           <-chan byte
+	commands         chan<- interface{}
+	errCh            chan<- error
+	buf              []byte
+	sbBuf            []byte
+	reader           *bufio.Reader
+	termTypeIx       int
+	debugBuf         []byte
+	once             *sync.Once
+	closed           bool
+	onClose          func(s *Session)
+	gmcpHasHandShake bool
 }
 
 type message struct {
@@ -45,7 +47,7 @@ type message struct {
 
 type gmcpMessage struct {
 	Key   string      `json:"key"`
-	Value interface{} `json:"value"`
+	Value interface{} `json:"value,omitempty"`
 }
 
 func (t *Telnet) NewSession(rwc io.ReadWriteCloser, onClose func(s *Session)) (sess *Session, err error) {
@@ -69,14 +71,34 @@ func (t *Telnet) NewSession(rwc io.ReadWriteCloser, onClose func(s *Session)) (s
 		reader:   bufio.NewReader(conn),
 		debugBuf: make([]byte, 0, 256),
 		commands: commandCh,
+		once:     &sync.Once{},
+		onClose:  onClose,
 	}
+
+	go func() {
+		for {
+			if sess.closed {
+				break
+			}
+			if sess.gmcpHasHandShake {
+				hello := map[string]string{
+					"secret":  sess.telnet.GmcpSecret,
+					"client":  version.AppName,
+					"version": version.Version,
+					"ip":      sess.telnet.ClientIp,
+				}
+				msg, _ := json.Marshal(hello)
+				sess.SendGmcp("Core.Hello " + string(msg))
+				break
+			}
+			time.Sleep(time.Millisecond * 50)
+		}
+	}()
 
 	go func() {
 		var err error
 
-		defer Close(conn)
-		defer mw.Close()
-		defer close(commandCh)
+		defer sess.Close()
 
 		quitCh := make(chan bool)
 		defer close(quitCh)
@@ -129,13 +151,24 @@ func (t *Telnet) NewSession(rwc io.ReadWriteCloser, onClose func(s *Session)) (s
 				internal.Log.Println(err)
 			}
 		}
-
-		if onClose != nil {
-			onClose(sess)
-		}
 	}()
 
 	return sess, nil
+}
+
+func (sess *Session) Close() {
+	sess.once.Do(func() {
+		sess.closed = true
+
+		close(sess.commands)
+		sess.writer.Close()
+
+		_ = sess.conn.Close()
+
+		if sess.onClose != nil {
+			sess.onClose(sess)
+		}
+	})
 }
 
 func (sess *Session) handleRead(b byte) error {
@@ -266,7 +299,7 @@ func (sess *Session) handleSb(data []byte) error {
 			return nil
 		}
 		return sess.writeSb(option, []byte{ENVIRON_IS},
-			[]byte{ENVIRON_VAR}, []byte("REAL_IP"), []byte{ENVIRON_VALUE}, []byte(sess.RemoteIp),
+			[]byte{ENVIRON_VAR}, []byte("REAL_IP"), []byte{ENVIRON_VALUE}, []byte(sess.telnet.ClientIp),
 		)
 
 	case OPT_LINEMODE:
@@ -285,22 +318,21 @@ func (sess *Session) handleSb(data []byte) error {
 		return sess.writeSocketRaw("mssp", data[1:])
 
 	case OPT_ATCP:
-		if string(data[1:]) == "Auth.Request ON" && sess.telnet.SendRemoteIp {
-			sess.sendATCPRemoteIp()
+		if string(data[1:]) == "Auth.Request ON" && sess.telnet.SendClientIp {
+			sess.sendATCPClientIp()
 		}
 		return sess.writeSocketRaw("atcp", data[1:])
 
 	case OPT_GMCP:
 		s := bytes.SplitN(data[1:], []byte(" "), 2)
-		if len(s) != 2 {
-			return nil
-		}
 
 		var v interface{}
-		err = json.Unmarshal(bytes.TrimSpace(s[1]), &v)
-		if err != nil {
-			internal.Log.Println(err)
-			return nil
+		if len(s) == 2 {
+			err = json.Unmarshal(bytes.TrimSpace(s[1]), &v)
+			if err != nil {
+				internal.Log.Println(err)
+				return nil
+			}
 		}
 		msg := gmcpMessage{
 			Key:   string(s[0]),
@@ -356,12 +388,8 @@ func (sess *Session) writeSbString(option byte, text string) error {
 	return sess.writeSb(option, []byte(text))
 }
 
-func (sess *Session) sendATCPRemoteIp() {
-	addr := sess.RemoteIp
-	portSep := strings.Index(addr, ":")
-	if portSep != -1 {
-		addr = addr[:portSep]
-	}
+func (sess *Session) sendATCPClientIp() {
+	addr := sess.telnet.ClientIp
 	names, err := net.LookupAddr(addr)
 
 	var name string
@@ -419,7 +447,11 @@ func (sess *Session) handleDo(second byte) error {
 		return sess.writeOption(IAC, DO, second)
 
 	case OPT_GMCP:
-		return sess.writeOption(IAC, DO, second)
+		err = sess.writeOption(IAC, DO, second)
+		if err != nil {
+			return err
+		}
+		sess.gmcpHasHandShake = true
 
 	default:
 		return sess.writeOption(IAC, WONT, second)
@@ -541,9 +573,8 @@ func (sess *Session) writeSocket() error {
 
 func (sess *Session) writeSocketRaw(event string, data []byte) error {
 	if len(data) == 0 {
-		return sess.testPing()
+		return nil
 	}
-	sess.lastWrite = time.Now()
 
 	writer := sess.writer
 
@@ -614,25 +645,4 @@ func (sess *Session) FlushTelnetBuffer() {
 		internal.TelnetDebug.Println(string(sess.debugBuf))
 		sess.debugBuf = sess.debugBuf[0:0]
 	}
-}
-
-func (sess *Session) testPing() error {
-	now := time.Now()
-	if now.After(sess.lastWrite.Add(PingInterval)) {
-		msg := &message{
-			Event:   "ping",
-			Content: "",
-		}
-		msgBytes, err := json.Marshal(msg)
-		if err != nil {
-			return err
-		}
-		_, err = sess.writer.Write(msgBytes)
-		if err != nil {
-			return err
-		}
-
-		sess.lastWrite = now
-	}
-	return nil
 }

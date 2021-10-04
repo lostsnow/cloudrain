@@ -27,12 +27,12 @@ func NewSessionTrace() *SessionTrace {
 func (t *SessionTrace) Created(s *Session) {
 	t.seqNo.Inc()
 	t.active.Inc()
-	logger.Infof("session %s started %s", s.RemoteIp, plural(t.active.Load(), t.seqNo.Load()))
+	logger.Infof("session %s started %s", s.telnet.ClientIp, plural(t.active.Load(), t.seqNo.Load()))
 }
 
 func (t *SessionTrace) Closed(s *Session) {
 	t.active.Dec()
-	logger.Infof("session %s ended %s", s.RemoteIp, plural(t.active.Load(), t.seqNo.Load()))
+	logger.Infof("session %s ended %s", s.telnet.ClientIp, plural(t.active.Load(), t.seqNo.Load()))
 }
 
 func plural(value, total int64) string {
