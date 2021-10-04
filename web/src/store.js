@@ -1,5 +1,6 @@
 import { createStore } from 'vuex';
 import { Room } from './models';
+import { ParseGMCP } from './gmcp';
 import app from "./main";
 
 export const store = createStore({
@@ -50,27 +51,8 @@ export const store = createStore({
           case "ping":
             console.log("ping...");
             break;
-          case "session":
-            try {
-              /** @var {{sid:string, token:string}} session */
-              let session = JSON.parse(message.content);
-              if (!session.sid || !session.token) {
-                this.dispatch("showText", "Invalid websocket session");
-                return;
-              }
-              state.autoLoginToken = session.token;
-            } catch (e) {
-              this.dispatch("showText", "Invalid websocket response");
-            }
-            break;
-          case "mssp":
-            console.log("mssp:", message.content);
-            break;
-          case "mxp":
-            console.log("mxp");
-            break;
           case "gmcp":
-            console.log("gmcp:", message.content);
+            ParseGMCP(message.content);
             break;
           default:
             break;
