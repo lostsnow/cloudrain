@@ -41,6 +41,7 @@ export function ParseGMCP(msg) {
             store.state.loginError = value.message;
             break;
           case "ERR_LOGIN_TOKEN":
+            store.commit("CLEAN_LOGIN_TOKEN');
             store.state.showLoginBox = true;
             break;
         }

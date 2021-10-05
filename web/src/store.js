@@ -113,6 +113,10 @@ export const store = createStore({
       }
     },
 
+    CLEAN_LOGIN_TOKEN() {
+      localStorage.removeItem('autoLoginToken');
+    },
+
     SET_ALLOW_GLOBAL_HOTKEYS: (state, allow) => {
       state.allowGlobalHotkeys = allow;
     },
