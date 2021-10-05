@@ -1,6 +1,12 @@
 <template>
   <div id="app">
-    <div class="container-wrapper">
+    <div class="container-wrapper" v-if="!isLogged && !showLoginBox">
+      <div class="progressing">Progressing.......</div>
+    </div>
+    <div class="container-wrapper" v-if="!isLogged && showLoginBox">
+      <Login />
+    </div>
+    <div class="container-wrapper" v-if="isLogged">
       <div class="container-left">
         <div class="container-maintext">
           <MainText :windowWidth="windowWidth" :windowHeight="windowHeight" />
@@ -21,7 +27,7 @@
         </div>
       </div>
     </div>
-    <div class="status-bar-container">
+    <div class="status-bar-container" v-if="isLogged">
       <StatusBar />
     </div>
   </div>
@@ -30,6 +36,7 @@
 <script>
 import { mapState } from "vuex";
 import MainText from "@/components/MainText";
+import Login from "@/components/Login";
 import InputBox from "@/components/InputBox";
 import Vitals from "@/components/Vitals";
 import Minimap from "@/components/Minimap";
@@ -41,6 +48,7 @@ export default {
   name: "App",
   components: {
     MainText,
+    Login,
     InputBox,
     Vitals,
     Minimap,
@@ -62,12 +70,17 @@ export default {
       "gmcpOK",
       "isLogged",
       "autoLoginToken",
+      "showLoginBox",
       "playerInfo",
     ]),
   },
   watch: {
+    autoLoginToken: function (token) {
+      if (!this.$store.state.isConnected && token.id && token.token) {
+        this.$store.dispatch("connect");
+      }
+    },
     isConnected: function (connected) {
-      this.$store.commit("INIT_LOGIN");
       if (!connected) {
         clearInterval(this.pingInterval);
         return;
@@ -100,7 +113,7 @@ export default {
     },
 
     onKeyUp(event) {
-      if (!this.allowGlobalHotkeys) {
+      if (!this.allowGlobalHotkeys && this.$store.isLogged) {
         return;
       }
 
@@ -138,14 +151,14 @@ export default {
       }
     },
     ping(interval) {
-        this.pingInterval = setInterval(
+      this.pingInterval = setInterval(
         function () {
           this.$store.state.lastPing = new Date().getMilliseconds();
           SendGMCP("Core.Ping");
         }.bind(this),
         interval
       );
-    }
+    },
   },
   mounted() {
     this.onWindowResize();
@@ -153,6 +166,8 @@ export default {
     window.addEventListener("resize", this.onWindowResize);
 
     window.addEventListener("keyup", this.onKeyUp);
+
+    this.$store.commit("INIT_LOGIN");
   },
   unmounted() {
     window.removeEventListener("resize", this.onWindowResize);
@@ -213,6 +228,10 @@ body {
   .container-wrapper {
     flex-grow: 1;
     display: flex;
+
+    .progressing {
+      font-size: 22px;
+    }
 
     .container-left {
       flex-grow: 1;

@@ -27,7 +27,8 @@ export const store = createStore({
       areaTitle: '',
       roomTitle: '',
       roomObjects: [],
-      userId: "",
+      showLoginBox: false,
+      loginError: "",
       autoLoginToken: { id: '', token: '' },
       playerInfo: { id: '', name: '', short: '' },
     }
@@ -55,6 +56,9 @@ export const store = createStore({
       try {
         switch (message.event) {
           case "text":
+            if (!state.isLogged) {
+              return;
+            }
             this.dispatch("showText", message.content);
             break;
           case "mssp":
@@ -83,15 +87,21 @@ export const store = createStore({
       state.reconnectError = true;
     },
 
+    CONNECT() {
+      app.app.config.globalProperties.$connect();
+    },
+
     INIT_LOGIN(state) {
       try {
         let token = localStorage.getItem('autoLoginToken');
         if (token) {
           state.autoLoginToken = JSON.parse(token);
+          return;
         }
-      } catch (error) {
-        console.log("invalid login token");
+      } catch (e) {
+        console.log("invalid login token: ", e);
       }
+      state.showLoginBox = true;
     },
 
     SET_LOGIN_TOKEN(state, token) {
@@ -157,6 +167,9 @@ export const store = createStore({
       commit('SET_FORCE_INPUT_FOCUS', payload);
     },
 
+    connect: ({ commit }) => {
+      commit('CONNECT');
+    },
     sendCommand: ({ state, commit }, payload) => {
       if (!state.isConnected) {
         return;

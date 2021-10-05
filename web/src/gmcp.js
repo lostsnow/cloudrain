@@ -28,20 +28,20 @@ export function ParseGMCP(msg) {
         if (typeof value.code === "undefined") {
           return;
         }
-
         if (value.code == 0) {
           store.commit("SET_LOGIN_TOKEN", { id: value.id, token: value.token });
           return;
         }
-        switch (value.err) {
+
+        switch (value.error) {
           case "ERR_REGISTER":
-            // @TODO: register failed
+            store.state.loginError = value.message;
             break;
           case "ERR_LOGIN_PASS":
-            // @TODO: login by pass failed
+            store.state.loginError = value.message;
             break;
           case "ERR_LOGIN_TOKEN":
-            // @TODO: redirect login by pass
+            store.state.showLoginBox = true;
             break;
         }
         break;

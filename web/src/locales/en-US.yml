@@ -1,6 +1,15 @@
 ui:
   input-box:
     click-to-active: 'Hotkey Mode Active, Click/Enter to type.'
+login:
+  id: 'ID'
+  password: 'Password'
+  name: 'Name'
+  login: 'Login'
+  register: 'Register'
+  id-required: 'ID is required'
+  password-required: 'Password is required'
+  name-required: 'Name is required'
 char:
   you: 'YOU'
   vitals:

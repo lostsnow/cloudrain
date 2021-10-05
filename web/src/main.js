@@ -30,7 +30,11 @@ if (typeof config !== 'undefined' && config.VUE_APP_WEBSOCKET_URL) {
   // eslint-disable-next-line no-undef
   websocketUrl = config.VUE_APP_WEBSOCKET_URL
 }
-app.use(VueNativeSock, websocketUrl, { store: store, format: 'json' })
+app.use(VueNativeSock, websocketUrl, {
+  store: store,
+  connectManually: true,
+  format: 'json',
+})
 
 window['CloudRain'] = app.mount('#app')
 

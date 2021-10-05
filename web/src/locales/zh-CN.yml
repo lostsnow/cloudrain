@@ -1,6 +1,15 @@
 ui:
   input-box:
     click-to-active: '热键模式激活，点击或回车输入指令。'
+login:
+  id: '英文名字'
+  password: '密码'
+  name: '中文名字'
+  login: '登录'
+  register: '注册'
+  id-required: '英文名字必须填写'
+  password-required: '密码必须填写'
+  name-required: '中文名字必须填写'
 char:
   you: '你'
   vitals:
