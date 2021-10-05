@@ -127,6 +127,7 @@ func handleCommand(ws *websocket.Conn, sess *telnet.Session) {
 		_, bs, err := ws.ReadMessage()
 		if err != nil {
 			sess.Close()
+			ws.Close()
 			logger.Errorf("Error reading from ws(%s): %v", ws.RemoteAddr(), err)
 			break
 		}
