@@ -9,6 +9,9 @@ export function ParseGMCP(msg) {
     if (!msg) {
       return;
     }
+    if (!store.state.gmcpOK) {
+      console.log("gmcp ok");
+    }
     store.state.gmcpOK = true;
     let gmcpInfo = JSON.parse(msg);
     let key = gmcpInfo["key"];
@@ -35,14 +38,15 @@ export function ParseGMCP(msg) {
 
         switch (value.error) {
           case "ERR_REGISTER":
-            store.state.loginError = value.message;
-            break;
           case "ERR_LOGIN_PASS":
             store.state.loginError = value.message;
             break;
           case "ERR_LOGIN_TOKEN":
             store.commit("CLEAN_LOGIN_TOKEN");
             store.state.showLoginBox = true;
+            break;
+          case "ERR_LOGIN":
+            console.log(value.message);
             break;
         }
         break;

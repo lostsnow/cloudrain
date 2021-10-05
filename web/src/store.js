@@ -29,6 +29,7 @@ export const store = createStore({
       roomObjects: [],
       showLoginBox: false,
       loginError: "",
+      loginTokenLoaded: false,
       autoLoginToken: { id: '', token: '' },
       playerInfo: { id: '', name: '', short: '' },
     }
@@ -40,6 +41,7 @@ export const store = createStore({
       state.isLogged = false;
     },
     SOCKET_ONCLOSE(state) {
+      console.log("websocket closed");
       if (state.isConnected) {
         state.isConnected = false;
         state.gameText = "\n" + app.app.config.globalProperties.$t('socket.closed');
@@ -96,10 +98,20 @@ export const store = createStore({
       try {
         let token = localStorage.getItem('autoLoginToken');
         if (token) {
-          state.autoLoginToken = JSON.parse(token);
+          console.log("read login token from local storage");
+          let tk = JSON.parse(token)
+          if (!tk.id || !tk.token) {
+            store.commit("CLEAN_LOGIN_TOKEN");
+            state.showLoginBox = true;
+            return;
+          }
+          console.log("login token loaded");
+          state.loginTokenLoaded = true;
+          state.autoLoginToken = tk;
           return;
         }
       } catch (e) {
+        store.commit("CLEAN_LOGIN_TOKEN");
         console.log("invalid login token: ", e);
       }
       state.showLoginBox = true;
@@ -110,6 +122,7 @@ export const store = createStore({
         localStorage.setItem('autoLoginToken', JSON.stringify(token));
         state.autoLoginToken = token;
         state.isLogged = true;
+        state.showLoginBox = false;
       }
     },
 

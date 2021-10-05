@@ -60,7 +60,6 @@ export default {
       windowHeight: 0,
       windowWidth: 0,
       rightSidebar: "flex",
-      socket: null,
     };
   },
   computed: {
@@ -69,14 +68,16 @@ export default {
       "isConnected",
       "gmcpOK",
       "isLogged",
+      "loginTokenLoaded",
       "autoLoginToken",
       "showLoginBox",
       "playerInfo",
     ]),
   },
   watch: {
-    autoLoginToken: function (token) {
-      if (!this.$store.state.isConnected && token.id && token.token) {
+    loginTokenLoaded: function (loaded) {
+      if (loaded && !this.$store.state.isConnected) {
+        console.log("connect to check local token");
         this.$store.dispatch("connect");
       }
     },
@@ -85,18 +86,26 @@ export default {
         clearInterval(this.pingInterval);
         return;
       }
+      console.log("connected, ping for gmcp");
       this.ping(1000);
     },
     gmcpOK: function (ok) {
-      if (ok) {
+      if (ok && !this.$store.state.isLogged) {
         let token = this.$store.state.autoLoginToken;
         if (token.id != "" && token.token != "") {
+          console.log("login by local token");
           SendGMCP("Char.Login", token);
           clearInterval(this.pingInterval);
           this.ping(10000);
         }
       }
     },
+    isLogged: function (logged) {
+      if (!logged) {
+        console.log("log out...");
+        this.$store.state.showLoginBox = true;
+      }
+    }
   },
   methods: {
     onWindowResize() {
@@ -113,7 +122,7 @@ export default {
     },
 
     onKeyUp(event) {
-      if (!this.allowGlobalHotkeys && this.$store.isLogged) {
+      if (!this.allowGlobalHotkeys && this.$store.state.isLogged) {
         return;
       }
 
@@ -154,6 +163,9 @@ export default {
       this.pingInterval = setInterval(
         function () {
           this.$store.state.lastPing = new Date().getMilliseconds();
+          if (!this.$store.state.gmcpOK) {
+            console.log("gmcp init Core.Ping");
+          }
           SendGMCP("Core.Ping");
         }.bind(this),
         interval

@@ -66,9 +66,12 @@
             <a class="btn btn-link" @click="switchToLogin" v-if="isRegister">{{
               $t("login.login")
             }}</a>
-            <a class="btn btn-link" @click="switchToRegister" v-if="!isRegister">{{
-              $t("login.register")
-            }}</a>
+            <a
+              class="btn btn-link"
+              @click="switchToRegister"
+              v-if="!isRegister"
+              >{{ $t("login.register") }}</a
+            >
           </div>
           <div v-show="loginError" class="form-error">
             {{ loginError }}
@@ -141,6 +144,7 @@ export default {
 
       this.status.processing = true;
       if (!this.$store.state.isConnected) {
+        console.log("connect before login");
         this.$store.commit("CONNECT");
       }
 
@@ -156,11 +160,14 @@ export default {
       this.loginInterval = setInterval(
         function () {
           if (!this.$store.state.gmcpOK || this.$store.state.isLogged) {
+            console.log("waiting gmcp...");
             return;
           }
           if (!this.isRegister) {
+            console.log("login by password");
             SendGMCP("Char.Login", payload);
           } else {
+            console.log("register new user");
             SendGMCP("Char.Register", payload);
           }
         }.bind(this),
@@ -189,7 +196,7 @@ export default {
       h2 {
         text-align: center;
         height: 100px;
-        background: url('../assets/logo.png') no-repeat center;
+        background: url("../assets/logo.png") no-repeat center;
         background-size: 120px;
       }
 
