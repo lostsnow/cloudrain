@@ -3,7 +3,7 @@
     <div class="container-wrapper">
       <div class="container-left">
         <div class="container-maintext">
-          <MainText :windowHeight="windowHeight" />
+          <MainText :windowWidth="windowWidth" :windowHeight="windowHeight" />
         </div>
         <div class="container-input">
           <InputBox />
@@ -51,10 +51,24 @@ export default {
       windowHeight: 0,
       windowWidth: 0,
       rightSidebar: "flex",
+      socket: null,
     };
   },
   computed: {
-    ...mapState(["allowGlobalHotkeys"]),
+    ...mapState(["allowGlobalHotkeys", "isConnected", "autoLoginToken"]),
+  },
+  watch: {
+    isConnected: function (connected) {
+      let token = this.$store.state.autoLoginToken;
+      if (connected) {
+        if (token.length > 0) {
+          this.$store.dispatch("sendCommand", {
+            command: `/logintoken ${token}`,
+            hidden: true,
+          });
+        }
+      }
+    },
   },
   methods: {
     onWindowResize() {
@@ -123,7 +137,7 @@ export default {
 </script>
 
 <style lang="scss">
-@import "~@/styles/common";
+@import "~@/styles/common.module";
 $backgroundNormal: #111;
 $backgroundLight: #1b1b1b;
 $sidebarWidth: 250px;

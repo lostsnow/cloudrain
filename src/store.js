@@ -1,16 +1,18 @@
 import { createStore } from 'vuex';
 import { Room } from './models';
+import app from "./main";
 
 export const store = createStore({
   state() {
     return {
       isProduction: process.env.NODE_ENV === "production",
+      isConnected: false,
+      reconnectError: false,
       mudName: 'CloudRain',
       mudVesion: 'v0.1.0',
       pingTime: 0,
-      isConnected: false,
       settings: { lines: 100 },
-      gameText: [],
+      gameText: "",
       allowGlobalHotkeys: true,
       forceInputFocus: { forced: false, text: '' },
       commandDictionary: [],
@@ -20,10 +22,70 @@ export const store = createStore({
       areaTitle: '',
       roomTitle: '',
       roomObjects: [],
+      autoLoginToken: "",
       playerInfo: { uuid: '', name: '' },
     }
   },
   mutations: {
+    SOCKET_ONOPEN(state) {
+      state.isConnected = true;
+    },
+    SOCKET_ONCLOSE(state) {
+      if (state.isConnected) {
+        state.isConnected = false;
+        state.gameText = app.app.config.globalProperties.$t('socket.closed');
+      } else {
+        state.gameText = app.app.config.globalProperties.$t('socket.not-established');
+      }
+    },
+    SOCKET_ONERROR(state, event) {
+      console.error(state, event);
+    },
+    SOCKET_ONMESSAGE(state, message) {
+      try {
+        switch (message.event) {
+          case "text":
+            this.dispatch("showText", message.content);
+            break;
+          case "ping":
+            console.log("ping...");
+            break;
+          case "session":
+            try {
+              /** @var {{sid:string, token:string}} session */
+              let session = JSON.parse(message.content);
+              if (!session.sid || !session.token) {
+                this.dispatch("showText", "Invalid websocket session");
+                return;
+              }
+              state.autoLoginToken = session.token;
+            } catch (e) {
+              this.dispatch("showText", "Invalid websocket response");
+            }
+            break;
+          case "mssp":
+            console.log("mssp:", message.content);
+            break;
+          case "mxp":
+            console.log("mxp");
+            break;
+          case "gmcp":
+            console.log("gmcp:", message.content);
+            break;
+          default:
+            break;
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    },
+    SOCKET_RECONNECT(state, count) {
+      console.info("reconnect...", state, count);
+    },
+    SOCKET_RECONNECT_ERROR(state) {
+      state.reconnectError = true;
+    },
+
     SET_ALLOW_GLOBAL_HOTKEYS: (state, allow) => {
       state.allowGlobalHotkeys = allow;
     },
@@ -38,15 +100,7 @@ export const store = createStore({
       state.commandHistory.push(command);
     },
     ADD_GAME_TEXT: (state, text) => {
-      state.gameText.push({
-        id: state.gameText.length,
-        html: text
-          .replace(/\n/g, "<br>")
-          .replace(/\[b\]/g, "<span style='font-weight:600'>")
-          .replace(/\[\/b\]/g, "</span>")
-          .replace(/\[cmd=([^\]]*)\]/g, "<a href='#' class='inline-command' onclick='window.Armeria.$store.dispatch(\"sendCommand\", {command:\"$1\"})'>")
-          .replace(/\[\/cmd\]/g, "</a>")
-      });
+      state.gameText = text;
     },
 
     SET_MINIMAP_DATA: (state, minimapData) => {
@@ -96,12 +150,17 @@ export const store = createStore({
 
       let echoCmd = payload.command;
       if (typeof payload.hidden !== 'boolean' || !payload.hidden) {
-        commit('ADD_GAME_TEXT', `<div class="inline-loopback">${echoCmd}</div>`);
+        commit('ADD_GAME_TEXT', `${echoCmd}\r\n`);
       }
+
+      app.app.config.globalProperties.$socket.sendObj({
+        type: "cmd",
+        content: payload.command
+      });
     },
 
     showText: ({ commit }, payload) => {
-      commit('ADD_GAME_TEXT', payload.data);
+      commit('ADD_GAME_TEXT', payload);
     },
     setMapData: ({ commit }, payload) => {
       commit('SET_MINIMAP_DATA', payload.data);

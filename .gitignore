@@ -1,12 +1,12 @@
 .DS_Store
 node_modules
-/dist
-.yarn
-.yarnrc.yml
+dist
 
 # local env files
 .env.local
 .env.*.local
+
+.env.production
 
 # Log files
 npm-debug.log*
@@ -22,3 +22,5 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+public/app.config.js

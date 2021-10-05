@@ -55,7 +55,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "@/styles/common";
+@import "@/styles/common.module";
 
 .root {
   height: 100%;

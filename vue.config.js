@@ -16,5 +16,7 @@ module.exports = {
         .type('javascript/auto')
         .use('i18n')
           .loader('@intlify/vue-i18n-loader')
-  }
+  },
+
+  productionSourceMap: false
 }
