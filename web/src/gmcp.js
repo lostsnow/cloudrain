@@ -1,7 +1,6 @@
 import { store } from './store'
 
 const CorePing = 'Core.Ping';
-const CoreInfo = 'Core.Info';
 const CharRegister = 'Char.Register';
 const CharLogin = 'Char.Login';
 
@@ -10,6 +9,7 @@ export function ParseGMCP(msg) {
     if (!msg) {
       return;
     }
+    store.state.gmcpOK = true;
     let gmcpInfo = JSON.parse(msg);
     let key = gmcpInfo["key"];
     let value = gmcpInfo["value"];
@@ -19,10 +19,8 @@ export function ParseGMCP(msg) {
 
     switch (key) {
       case CorePing:
-        break;
-      case CoreInfo:
-        if (value.NAME) {
-          store.state.mudName = value.NAME;
+        if (store.state.lastPing > 0) {
+          store.state.pingTime = (new Date).getMilliseconds() - store.state.lastPing;
         }
         break;
       case CharRegister:
@@ -32,18 +30,18 @@ export function ParseGMCP(msg) {
         }
 
         if (value.code == 0) {
-          store.commit("SET_LOGIN_TOKEN", {id: value.id, token: value.token});
+          store.commit("SET_LOGIN_TOKEN", { id: value.id, token: value.token });
           return;
         }
         switch (value.err) {
           case "ERR_REGISTER":
-              // @TODO: register failed
+            // @TODO: register failed
             break;
           case "ERR_LOGIN_PASS":
             // @TODO: login by pass failed
             break;
           case "ERR_LOGIN_TOKEN":
-              // @TODO: redirect login by pass
+            // @TODO: redirect login by pass
             break;
         }
         break;
@@ -57,13 +55,20 @@ export function ParseGMCP(msg) {
 }
 
 export function SendGMCPString(key, payload) {
+  let cmd = `${key}`
+  if (typeof payload !== "undefined" || payload === "") {
+    cmd += ` ${payload}`
+  }
   store.dispatch("sendCommand", {
     type: "gmcp",
-    command: `${key} ${payload}`,
+    command: cmd,
   });
 }
 
 export function SendGMCP(key, payload) {
-  let p = JSON.stringify(payload);
+  let p = "";
+  if (typeof payload !== "undefined") {
+    p = JSON.stringify(payload);
+  }
   SendGMCPString(key, p);
 }

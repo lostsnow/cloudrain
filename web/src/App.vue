@@ -35,7 +35,7 @@ import Vitals from "@/components/Vitals";
 import Minimap from "@/components/Minimap";
 import RoomTargets from "@/components/RoomTargets";
 import StatusBar from "@/components/StatusBar";
-import { SendGMCP } from './gmcp';
+import { SendGMCP } from "./gmcp";
 
 export default {
   name: "App",
@@ -56,15 +56,31 @@ export default {
     };
   },
   computed: {
-    ...mapState(["allowGlobalHotkeys", "isConnected", "autoLoginToken", "playerInfo"]),
+    ...mapState([
+      "allowGlobalHotkeys",
+      "isConnected",
+      "gmcpOK",
+      "isLogged",
+      "autoLoginToken",
+      "playerInfo",
+    ]),
   },
   watch: {
     isConnected: function (connected) {
       this.$store.commit("INIT_LOGIN");
-      let token = this.$store.state.autoLoginToken;
-      if (connected) {
+      if (!connected) {
+        clearInterval(this.pingInterval);
+        return;
+      }
+      this.ping(1000);
+    },
+    gmcpOK: function (ok) {
+      if (ok) {
+        let token = this.$store.state.autoLoginToken;
         if (token.id != "" && token.token != "") {
           SendGMCP("Char.Login", token);
+          clearInterval(this.pingInterval);
+          this.ping(10000);
         }
       }
     },
@@ -121,6 +137,15 @@ export default {
         });
       }
     },
+    ping(interval) {
+        this.pingInterval = setInterval(
+        function () {
+          this.$store.state.lastPing = new Date().getMilliseconds();
+          SendGMCP("Core.Ping");
+        }.bind(this),
+        interval
+      );
+    }
   },
   mounted() {
     this.onWindowResize();

@@ -2,7 +2,6 @@ package telnet
 
 import (
 	"bufio"
-	"bytes"
 	"compress/zlib"
 	"encoding/json"
 	"io"
@@ -43,11 +42,6 @@ type Session struct {
 type message struct {
 	Event   string `json:"event"`
 	Content string `json:"content"`
-}
-
-type gmcpMessage struct {
-	Key   string      `json:"key"`
-	Value interface{} `json:"value,omitempty"`
 }
 
 func (t *Telnet) NewSession(rwc io.ReadWriteCloser, onClose func(s *Session)) (sess *Session, err error) {
@@ -315,7 +309,12 @@ func (sess *Session) handleSb(data []byte) error {
 		return sess.writeSb(OPT_LINEMODE, []byte{LINEMODE_MODE, replyMask})
 
 	case OPT_MSSP:
-		return sess.writeSocketRaw("mssp", data[1:])
+		md, err := MSSPResponse(data[1:])
+		if err != nil {
+			internal.Log.Println(err)
+			return nil
+		}
+		return sess.writeSocketRaw("mssp", md)
 
 	case OPT_ATCP:
 		if string(data[1:]) == "Auth.Request ON" && sess.telnet.SendClientIp {
@@ -324,26 +323,12 @@ func (sess *Session) handleSb(data []byte) error {
 		return sess.writeSocketRaw("atcp", data[1:])
 
 	case OPT_GMCP:
-		s := bytes.SplitN(data[1:], []byte(" "), 2)
-
-		var v interface{}
-		if len(s) == 2 {
-			err = json.Unmarshal(bytes.TrimSpace(s[1]), &v)
-			if err != nil {
-				internal.Log.Println(err)
-				return nil
-			}
-		}
-		msg := gmcpMessage{
-			Key:   string(s[0]),
-			Value: v,
-		}
-
-		j, err := json.Marshal(msg)
+		gd, err := GMCPResponse(data[1:])
 		if err != nil {
 			internal.Log.Println(err)
+			return nil
 		}
-		if err := sess.writeSocketRaw("gmcp", j); err != nil {
+		if err := sess.writeSocketRaw("gmcp", gd); err != nil {
 			internal.Log.Println(err)
 		}
 

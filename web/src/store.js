@@ -8,11 +8,13 @@ export const store = createStore({
     return {
       isProduction: process.env.NODE_ENV === "production",
       isConnected: false,
-      isLogin: false,
+      isLogged: false,
       reconnectError: false,
       mudName: 'CloudRain',
       mudVesion: 'v0.1.0',
+      lastPing: 0,
       pingTime: 0,
+      gmcpOK: false,
       settings: { lines: 100 },
       gameTextHistory: [],
       gameText: "",
@@ -33,16 +35,18 @@ export const store = createStore({
   mutations: {
     SOCKET_ONOPEN(state) {
       state.isConnected = true;
-      state.isLogin = false;
+      state.gmcpOK = false;
+      state.isLogged = false;
     },
     SOCKET_ONCLOSE(state) {
       if (state.isConnected) {
         state.isConnected = false;
-        state.gameText = app.app.config.globalProperties.$t('socket.closed');
+        state.gameText = "\n" + app.app.config.globalProperties.$t('socket.closed');
       } else {
-        state.gameText = app.app.config.globalProperties.$t('socket.not-established');
+        state.gameText = "\n" + app.app.config.globalProperties.$t('socket.not-established');
       }
-      state.isLogin = false;
+      state.gmcpOK = false;
+      state.isLogged = false;
     },
     SOCKET_ONERROR(state, event) {
       console.error(state, event);
@@ -52,6 +56,15 @@ export const store = createStore({
         switch (message.event) {
           case "text":
             this.dispatch("showText", message.content);
+            break;
+          case "mssp":
+            if (message.content == "") {
+              return;
+            }
+            var msspInfo = JSON.parse(message.content);
+            if (msspInfo.NAME) {
+              state.mudName = msspInfo.NAME;
+            }
             break;
           case "gmcp":
             ParseGMCP(message.content);
@@ -85,7 +98,7 @@ export const store = createStore({
       if (token.id && token.token) {
         localStorage.setItem('autoLoginToken', JSON.stringify(token));
         state.autoLoginToken = token;
-        state.isLogin = true;
+        state.isLogged = true;
       }
     },
 
