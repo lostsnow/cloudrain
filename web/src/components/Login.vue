@@ -2,7 +2,7 @@
   <div class="root">
     <div class="login-container" ref="mainLoginContainer">
       <div class="login-box">
-        <h2>{{ $t("login.login") }}</h2>
+        <h2></h2>
         <form @submit.prevent="handleSubmit">
           <div class="form-group">
             <input
@@ -188,7 +188,9 @@ export default {
 
       h2 {
         text-align: center;
-        font-size: 28px;
+        height: 100px;
+        background: url('../assets/logo.png') no-repeat center;
+        background-size: 120px;
       }
 
       .form-error {

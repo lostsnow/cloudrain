@@ -68,6 +68,7 @@ export const store = createStore({
             var msspInfo = JSON.parse(message.content);
             if (msspInfo.NAME) {
               state.mudName = msspInfo.NAME;
+              document.title = state.mudName;
             }
             break;
           case "gmcp":
