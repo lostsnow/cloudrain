@@ -453,12 +453,15 @@ func (sess *Session) handleCommand(cmd interface{}) error {
 	switch cmd := cmd.(type) {
 	case string:
 		data := []byte(cmd)
-		data, err := charset.Encode(data, sess.telnet.Charset)
-		if err != nil {
-			return nil
+		if sess.telnet.Charset != "utf-8" {
+			d, err := charset.Encode(data, sess.telnet.Charset)
+			if err != nil {
+				return nil
+			}
+			data = d
 		}
 
-		_, err = sess.conn.Write(data)
+		_, err := sess.conn.Write(data)
 		return err
 
 	case setWindowSizeCommand:
@@ -563,9 +566,12 @@ func (sess *Session) writeSocketRaw(event string, data []byte) error {
 
 	writer := sess.writer
 
-	data, err := charset.Decode(data, sess.telnet.Charset)
-	if err != nil {
-		return err
+	if sess.telnet.Charset != "utf-8" {
+		d, err := charset.Decode(data, sess.telnet.Charset)
+		if err != nil {
+			return err
+		}
+		data = d
 	}
 
 	msg := &message{

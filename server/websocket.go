@@ -93,6 +93,11 @@ func WebsocketHandler(c echo.Context) error {
 		return err
 	}
 	t.ClientIp = ip
+	if t.Charset == "" {
+		t.Charset = "utf-8"
+	} else {
+		t.Charset = strings.ToLower(t.Charset)
+	}
 
 	sess, err := t.NewSession(rw, onClose)
 	if err == nil {
