@@ -76,9 +76,13 @@ export default {
   },
   watch: {
     loginTokenLoaded: function (loaded) {
-      if (loaded && !this.$store.state.isConnected) {
-        console.log("connect to check local token");
-        this.$store.dispatch("connect");
+      if (loaded) {
+        if (!this.$store.state.isConnected) {
+          console.log("connect to check local token");
+          this.$store.dispatch("connect");
+        }
+      } else {
+        this.$store.commit("INIT_LOGIN");
       }
     },
     isConnected: function (connected) {
@@ -103,9 +107,9 @@ export default {
     isLogged: function (logged) {
       if (!logged) {
         console.log("log out...");
-        this.$store.state.showLoginBox = true;
+        this.$store.state.loginTokenLoaded = false;
       }
-    }
+    },
   },
   methods: {
     onWindowResize() {
