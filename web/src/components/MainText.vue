@@ -45,7 +45,7 @@ export default {
       lineHeight: 1,
     });
 
-    if (this.$store.state.settings.userAmbiguousReplace) {
+    if (this.$store.state.settings.useAmbiguousReplace) {
       const unicode11Addon = new Unicode11Addon();
       term.loadAddon(unicode11Addon);
       term.unicode.activeVersion = "11";

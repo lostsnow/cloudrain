@@ -17,7 +17,7 @@ export const store = createStore({
       lastPing: 0,
       pingTime: 0,
       gmcpOK: false,
-      settings: { userAmbiguousReplace: true, lines: 100 },
+      settings: { useAmbiguousReplace: true, lines: 100 },
       gameTextHistory: [],
       gameText: "",
       allowGlobalHotkeys: true,
@@ -147,7 +147,7 @@ export const store = createStore({
       state.commandHistory.push(command);
     },
     ADD_GAME_TEXT: (state, text) => {
-      if (state.settings.userAmbiguousReplace) {
+      if (state.settings.useAmbiguousReplace) {
         text = AmbiguousReplace(text);
       }
       state.gameText = text;
