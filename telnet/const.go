@@ -24,68 +24,71 @@ const (
 	IAC   = 255 // interpret as command
 
 	// Telnet Options. rfc855
-	OPT_TM          = 6   // timing mark. rfc860
-	OPT_TTYPE       = 24  // terminal type. rfc930, rfc1091
-	OPT_EOR         = 25  // end of record. rfc885
-	OPT_NAWS        = 31  // negotiate about window size. rfc1073
-	OPT_LINEMODE    = 34  // linemode. rfc1184
-	OPT_ENVIRON     = 36  // environment option. rfc1408
-	OPT_NEW_ENVIRON = 39  // new environment option. rfc1572
-	OPT_CHARSET     = 42  // character set. rfc2066
-	OPT_MSDP        = 69  // mud server data protocol. @see: https://tintin.sourceforge.io/protocols/msdp/
-	OPT_MSSP        = 70  // mud server status protocol. @see: https://tintin.sourceforge.io/protocols/mssp/
-	OPT_MCCP        = 86  // mud client compression protocol(v2). @see: https://tintin.sourceforge.io/protocols/mccp/
-	OPT_MSP         = 90  // mud sound protocol. @see: https://www.zuggsoft.com/zmud/msp.htm
-	OPT_MXP         = 91  // mud extension protocol. @see: https://www.zuggsoft.com/zmud/mxp.htm
-	OPT_ATCP        = 200 // achaea telnet client protocol. @see: https://www.ironrealms.com/rapture/manual/files/FeatATCP-txt.html
-	OPT_GMCP        = 201 // generic mud client protocol. @see: https://tintin.sourceforge.io/protocols/gmcp/
+	OptTM         = 6   // timing mark. rfc860
+	OptTType      = 24  // terminal type. rfc930, rfc1091
+	OptEOR        = 25  // end of record. rfc885
+	OptNAWS       = 31  // negotiate about window size. rfc1073
+	OptLineMode   = 34  // linemode. rfc1184
+	OptEnviron    = 36  // environment option. rfc1408
+	OptNewEnviron = 39  // new environment option. rfc1572
+	OptCharset    = 42  // character set. rfc2066
+	OptMSDP       = 69  // mud server data protocol. @see: https://tintin.sourceforge.io/protocols/msdp/
+	OptMSSP       = 70  // mud server status protocol. @see: https://tintin.sourceforge.io/protocols/mssp/
+	OptMCCP       = 86  // mud client compression protocol(v2). @see: https://tintin.sourceforge.io/protocols/mccp/
+	OptMSP        = 90  // mud sound protocol. @see: https://www.zuggsoft.com/zmud/msp.htm
+	OptMXP        = 91  // mud extension protocol. @see: https://www.zuggsoft.com/zmud/mxp.htm
+	OptATCP       = 200 // achaea telnet client protocol. @see: https://www.ironrealms.com/rapture/manual/files/FeatATCP-txt.html
+	OptGMCP       = 201 // generic mud client protocol. @see: https://tintin.sourceforge.io/protocols/gmcp/
 
-	// OPT_TTYPE
-	TTYPE_IS   = 0
-	TTYPE_SEND = 1
+	// OptTType
+	TTypeIs   = 0
+	TTypeSend = 1
 
 	// MTTS standard codes @see: https://tintin.sourceforge.io/protocols/mtts/
-	MTTS_ANSI              = 1
-	MTTS_VT100             = 2
-	MTTS_UTF8              = 4
-	MTTS_256_COLORS        = 8
-	MTTS_MOUSE_TRACKING    = 16
-	MTTS_OSC_COLOR_PALETTE = 32
-	MTTS_SCREEN_READER     = 64
-	MTTS_PROXY             = 128
+	TTypeANSI            = 1
+	TTypeVT100           = 2
+	TTypeUTF8            = 4
+	TType256Colors       = 8
+	TTypeMouseTracking   = 16
+	TTypeOscColorPalette = 32
+	TTypeScreenReader    = 64
+	TTypeProxy           = 128
+	TTypeTrueColor       = 256
+	TTypeMNES            = 512
+	TTypeMSLP            = 1024
 
-	// OPT_ENVIRON, OPT_NEW_ENVIRON
-	ENVIRON_IS      = 0
-	ENVIRON_SEND    = 1
-	ENVIRON_VAR     = 0
-	ENVIRON_VALUE   = 1
-	ENVIRON_ESC     = 2
-	ENVIRON_USERVAR = 3
+	// OptEnviron, OptNewEnviron
+	EnvironIs      = 0
+	EnvironSend    = 1
+	EnvironVar     = 0
+	EnvironValue   = 1
+	EnvironESC     = 2
+	EnvironUserVar = 3
 
-	// OPT_CHARSET
-	CHARSET_REQUEST  = 1
-	CHARSET_ACCEPTED = 2
-	CHARSET_REJECTED = 3
+	// OptCharset
+	CharsetRequest  = 1
+	CharsetAccepted = 2
+	CharsetRejected = 3
 
-	// OPT_MSDP
-	MSDP_VAR         = 1
-	MSDP_VAL         = 2
-	MSDP_TABLE_OPEN  = 3
-	MSDP_TABLE_CLOSE = 4
-	MSDP_ARRAY_OPEN  = 5
-	MSDP_ARRAY_CLOSE = 6
+	// OptMSDP
+	MSDPVar        = 1
+	MSDPVal        = 2
+	MSDPTableOpen  = 3
+	MSDPTableClose = 4
+	MSDPArrayOpen  = 5
+	MSDPArrayClose = 6
 
 	// OPT_MSSP
-	MSSP_VAR = 1
-	MSSP_VAL = 2
+	MsspVar = 1
+	MsspVal = 2
 
-	// OPT_LINEMODE
-	LINEMODE_MODE          = 1
-	LINEMODE_MODE_EDIT     = 1
-	LINEMODE_MODE_TRAPSIG  = 2
-	LINEMODE_MODE_ACK      = 4
-	LINEMODE_MODE_SOFT_TAB = 8
-	LINEMODE_MODE_LIT_ECHO = 16
+	// OptLineMode
+	LineMode        = 1
+	LineModeEdit    = 1
+	LineModeTrapSig = 2
+	LineModeAck     = 4
+	LineModeSoftTab = 8
+	LineModeLitEcho = 16
 )
 
 var CmdNames = map[byte]string{

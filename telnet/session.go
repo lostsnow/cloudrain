@@ -9,10 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/lostsnow/cloudrain/charset"
-	"github.com/lostsnow/cloudrain/internal/version"
 	"github.com/lostsnow/cloudrain/telnet/internal"
 )
 
@@ -24,13 +22,12 @@ type gmcpCommand string
 type Session struct {
 	telnet           *Telnet
 	conn             net.Conn
-	writer           *multiWriter
+	writer           *writerEntry
 	readCh           <-chan byte
 	commands         chan<- interface{}
 	errCh            chan<- error
 	buf              []byte
 	sbBuf            []byte
-	reader           *bufio.Reader
 	termTypeIx       int
 	debugBuf         []byte
 	once             *sync.Once
@@ -39,124 +36,11 @@ type Session struct {
 	gmcpHasHandShake bool
 }
 
-type message struct {
-	Event   string `json:"event"`
-	Content string `json:"content"`
-}
-
-func (t *Telnet) NewSession(rwc io.ReadWriteCloser, onClose func(s *Session)) (sess *Session, err error) {
-	mw := NewMultiWriter(rwc)
-
-	conn, err := t.Dial()
-	if err != nil {
-
-		return nil, err
-	}
-
-	errCh := make(chan error, 20)
-	commandCh := make(chan interface{})
-	sess = &Session{
-		telnet:   t,
-		conn:     conn,
-		writer:   mw,
-		errCh:    errCh,
-		buf:      make([]byte, 0, 1024),
-		sbBuf:    make([]byte, 0, 64),
-		reader:   bufio.NewReader(conn),
-		debugBuf: make([]byte, 0, 256),
-		commands: commandCh,
-		once:     &sync.Once{},
-		onClose:  onClose,
-	}
-
-	go func() {
-		for {
-			if sess.closed {
-				break
-			}
-			if sess.gmcpHasHandShake {
-				hello := map[string]string{
-					"secret":  sess.telnet.GmcpSecret,
-					"client":  version.AppName,
-					"version": version.Version,
-					"ip":      sess.telnet.ClientIp,
-				}
-				msg, _ := json.Marshal(hello)
-				sess.SendGmcp("Core.Hello " + string(msg))
-				break
-			}
-			time.Sleep(time.Millisecond * 50)
-		}
-	}()
-
-	go func() {
-		var err error
-
-		defer sess.Close()
-
-		quitCh := make(chan bool)
-		defer close(quitCh)
-
-		sess.initReadChannel(quitCh)
-
-	ReadLoop:
-		for {
-			var timeout <-chan time.Time
-			if len(sess.buf) > 0 {
-				timeout = time.After(100 * time.Millisecond)
-			} else {
-				timeout = time.After(6 * time.Second)
-			}
-
-			select {
-			case b, ok := <-sess.readCh:
-				if !ok {
-					break ReadLoop
-				}
-				err = sess.handleRead(b)
-				break
-
-			case <-timeout:
-				err = sess.writeSocket()
-				break
-
-			case cmd := <-commandCh:
-				err = sess.writeSocket()
-				if err != nil {
-					break
-				}
-				err = sess.handleCommand(cmd)
-				break
-
-			case err = <-errCh:
-				break
-			}
-
-			if err != nil {
-				break
-			}
-		}
-
-		if err != nil {
-			internal.Log.Println(err)
-		} else {
-			err = sess.writeSocket()
-			if err != nil {
-				internal.Log.Println(err)
-			}
-		}
-	}()
-
-	return sess, nil
-}
-
 func (sess *Session) Close() {
 	sess.once.Do(func() {
 		sess.closed = true
-
 		close(sess.commands)
 		sess.writer.Close()
-
 		_ = sess.conn.Close()
 
 		if sess.onClose != nil {
@@ -197,7 +81,6 @@ func (sess *Session) handleOption() error {
 			return err
 		}
 		sess.FlushTelnetBuffer()
-
 	case SB:
 		buf := sess.sbBuf[0:0]
 		second, err := sess.readOptionByte(false)
@@ -224,7 +107,6 @@ func (sess *Session) handleOption() error {
 		}
 		sess.FlushTelnetBuffer()
 		return sess.handleSb(buf)
-
 	case DO:
 		second, err := sess.readOptionByte(false)
 		if err != nil {
@@ -232,14 +114,12 @@ func (sess *Session) handleOption() error {
 		}
 		sess.FlushTelnetBuffer()
 		return sess.handleDo(second)
-
 	case DONT:
 		_, err = sess.readOptionByte(false)
 		if err != nil {
 			return err
 		}
 		sess.FlushTelnetBuffer()
-
 	case WILL:
 		second, err := sess.readOptionByte(false)
 		if err != nil {
@@ -247,25 +127,22 @@ func (sess *Session) handleOption() error {
 		}
 		sess.FlushTelnetBuffer()
 		switch second {
-		case OPT_MSSP:
+		case OptMSSP:
 			return sess.handleDo(second)
-		case OPT_GMCP:
+		case OptGMCP:
 			return sess.handleDo(second)
 		default:
 			return sess.handleWill(second)
 		}
-
 	case WONT:
 		_, err = sess.readOptionByte(false)
 		if err != nil {
 			return err
 		}
 		sess.FlushTelnetBuffer()
-
 	default:
 		sess.FlushTelnetBuffer()
 	}
-
 	return nil
 }
 
@@ -276,53 +153,47 @@ func (sess *Session) handleSb(data []byte) error {
 	}
 
 	option := data[0]
-
 	switch option {
-	case OPT_TTYPE:
-		if len(data) != 2 || data[1] != TTYPE_SEND {
+	case OptTType:
+		if len(data) != 2 || data[1] != TTypeSend {
 			return nil
 		}
-		err = sess.writeSb(OPT_TTYPE, []byte{TTYPE_IS}, TermTypes[sess.termTypeIx])
+		err = sess.writeSb(OptTType, []byte{TTypeIs}, TermTypes[sess.termTypeIx])
 		if err != nil {
 			return err
 		}
 		sess.termTypeIx = (sess.termTypeIx + 1) % len(TermTypes)
-
-	case OPT_NEW_ENVIRON, OPT_ENVIRON:
-		if len(data) < 2 || data[1] != ENVIRON_SEND {
+	case OptNewEnviron, OptEnviron:
+		if len(data) < 2 || data[1] != EnvironSend {
 			return nil
 		}
-		return sess.writeSb(option, []byte{ENVIRON_IS},
-			[]byte{ENVIRON_VAR}, []byte("REAL_IP"), []byte{ENVIRON_VALUE}, []byte(sess.telnet.ClientIp),
+		return sess.writeSb(option, []byte{EnvironIs},
+			[]byte{EnvironVar}, []byte("REAL_IP"), []byte{EnvironValue}, []byte(sess.telnet.ClientIp),
 		)
-
-	case OPT_LINEMODE:
-		if len(data) != 3 || data[1] != LINEMODE_MODE {
+	case OptLineMode:
+		if len(data) != 3 || data[1] != LineMode {
 			return nil
 		}
 		mask := data[2]
-		if mask&LINEMODE_MODE_ACK == LINEMODE_MODE_ACK {
+		if mask&LineModeAck == LineModeAck {
 			return nil
 		}
 
-		replyMask := mask | LINEMODE_MODE_ACK
-		return sess.writeSb(OPT_LINEMODE, []byte{LINEMODE_MODE, replyMask})
-
-	case OPT_MSSP:
+		replyMask := mask | LineModeAck
+		return sess.writeSb(OptLineMode, []byte{LineMode, replyMask})
+	case OptMSSP:
 		md, err := MSSPResponse(data[1:])
 		if err != nil {
 			internal.Log.Println(err)
 			return nil
 		}
 		return sess.writeSocketRaw("mssp", md)
-
-	case OPT_ATCP:
+	case OptATCP:
 		if string(data[1:]) == "Auth.Request ON" && sess.telnet.SendClientIp {
 			sess.sendATCPClientIp()
 		}
 		return sess.writeSocketRaw("atcp", data[1:])
-
-	case OPT_GMCP:
+	case OptGMCP:
 		gd, err := GMCPResponse(data[1:])
 		if err != nil {
 			internal.Log.Println(err)
@@ -331,8 +202,7 @@ func (sess *Session) handleSb(data []byte) error {
 		if err := sess.writeSocketRaw("gmcp", gd); err != nil {
 			internal.Log.Println(err)
 		}
-
-	case OPT_MXP:
+	case OptMXP:
 		return sess.writeSocketRaw("mxp", data[1:])
 	}
 
@@ -346,7 +216,6 @@ func (sess *Session) writeSb(option byte, data ...[]byte) error {
 	}
 
 	buf := make([]byte, 0, size+5)
-
 	buf = append(buf, IAC, SB, option)
 	sess.TelnetDebug("<- ")
 	sess.DumpOptionByte(IAC, false)
@@ -384,13 +253,16 @@ func (sess *Session) sendATCPClientIp() {
 		name = addr
 	}
 	name = strings.TrimSuffix(name, ".")
-	err = sess.writeSbString(OPT_ATCP, "ava_remoteip "+addr+" "+name)
+	err = sess.writeSbString(OptATCP, "ava_remoteip "+addr+" "+name)
+	if err != nil {
+		internal.Log.Println(err)
+	}
 }
 
 func (sess *Session) handleDo(second byte) error {
 	var err error
 	switch second {
-	case OPT_ATCP:
+	case OptATCP:
 		err = sess.writeOption(IAC, WILL, second)
 		if err != nil {
 			return err
@@ -410,34 +282,28 @@ func (sess *Session) handleDo(second byte) error {
 			"map_display 1",
 		}
 
-		err = sess.writeSbString(OPT_ATCP, strings.Join(options, "\n"))
+		err = sess.writeSbString(OptATCP, strings.Join(options, "\n"))
 		if err != nil {
 			return err
 		}
-
-	case OPT_NAWS:
+	case OptNAWS:
 		return sess.writeOption(IAC, WILL, second)
-
-	case OPT_TTYPE, OPT_ENVIRON, OPT_LINEMODE, OPT_NEW_ENVIRON:
+	case OptTType, OptEnviron, OptLineMode, OptNewEnviron:
 		return sess.writeOption(IAC, WILL, second)
-
-	case OPT_TM:
+	case OptTM:
 		err = sess.writeSocket()
 		if err != nil {
 			return err
 		}
 		return sess.writeOption(IAC, WILL, second)
-
-	case OPT_MSSP:
+	case OptMSSP:
 		return sess.writeOption(IAC, DO, second)
-
-	case OPT_GMCP:
+	case OptGMCP:
 		err = sess.writeOption(IAC, DO, second)
 		if err != nil {
 			return err
 		}
 		sess.gmcpHasHandShake = true
-
 	default:
 		return sess.writeOption(IAC, WONT, second)
 	}
@@ -456,26 +322,21 @@ func (sess *Session) handleCommand(cmd interface{}) error {
 		if sess.telnet.Charset != "utf-8" {
 			d, err := charset.Encode(data, sess.telnet.Charset)
 			if err != nil {
-				return nil
+				return nil //nolint:nilerr
 			}
 			data = d
 		}
 
 		_, err := sess.conn.Write(data)
 		return err
-
 	case setWindowSizeCommand:
-		return sess.writeOption(IAC, SB, OPT_NAWS, 0, cmd.width, 0, cmd.height, IAC, SE)
-
+		return sess.writeOption(IAC, SB, OptNAWS, 0, cmd.width, 0, cmd.height, IAC, SE)
 	case atcpCommand:
-		return sess.writeSb(OPT_ATCP, []byte(cmd))
-
+		return sess.writeSb(OptATCP, []byte(cmd))
 	case mxpCommand:
-		return sess.writeSb(OPT_MXP, []byte(cmd))
-
+		return sess.writeSb(OptMXP, []byte(cmd))
 	case gmcpCommand:
-		return sess.writeSb(OPT_GMCP, []byte(cmd))
-
+		return sess.writeSb(OptGMCP, []byte(cmd))
 	default:
 		return ErrInvalidCommand
 	}
@@ -503,15 +364,14 @@ func (sess *Session) SendGmcp(text string) {
 
 func (sess *Session) initReadChannel(quitCh <-chan bool) {
 	ch := make(chan byte)
-	compressionSequence := []byte{IAC, SB, OPT_MCCP, IAC, SE}
+	compressionSequence := []byte{IAC, SB, OptMCCP, IAC, SE}
 	var seqix int
 	compressionStarted := false
-	reader := sess.reader
+	reader := bufio.NewReader(sess.conn)
 	go func() {
 		defer close(ch)
 		for {
 			b, err := reader.ReadByte()
-
 			if err == io.EOF {
 				return
 			} else if err != nil {
@@ -526,23 +386,25 @@ func (sess *Session) initReadChannel(quitCh <-chan bool) {
 				return
 			}
 
-			if !compressionStarted && b == compressionSequence[seqix] {
-				seqix++
-				if seqix == len(compressionSequence) {
-					seqix = 0
-					zReader, err := zlib.NewReader(sess.reader)
-					if err != nil {
-						internal.Log.Println(err)
-						if e := sess.writeOption(IAC, DONT, OPT_MCCP); e != nil {
-							internal.Log.Println(err)
-						}
-					} else {
-						reader = bufio.NewReader(zReader)
-						compressionStarted = true
-					}
-				}
-			} else {
+			if compressionStarted || b != compressionSequence[seqix] {
 				seqix = 0
+				continue
+			}
+
+			seqix++
+			if seqix != len(compressionSequence) {
+				continue
+			}
+			seqix = 0
+			zReader, err := zlib.NewReader(reader)
+			if err == nil {
+				reader = bufio.NewReader(zReader)
+				compressionStarted = true
+				continue
+			}
+			internal.Log.Println(err)
+			if e := sess.writeOption(IAC, DONT, OptMCCP); e != nil {
+				internal.Log.Println(err)
 			}
 		}
 	}()
