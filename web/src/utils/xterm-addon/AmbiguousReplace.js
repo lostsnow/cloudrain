@@ -3,7 +3,7 @@ let charsA1 = '─┌┎╓└┖╙' + '┬┭┰┱├┞┟┠┴┵┸┹' +
 let charsA2 = '━┏┍┗┕' + '┳┲┯┮┣┢┡┝┻┺┷┶' + '╋╇╈┿╊╆╄┾';
 let charsA3 = '═╔╒╚╘' + '╦╠╧╞╤╩' + '╬╪';
 let charsA0 = '│┃║' + '┐┤┘┑┥┙┒┨┚┓┫┛┩┪' + '╗╝╣╕╛╢╕╡╛╮╯' + '╱╲↑↓→≈≌◎①②③④⑤⑥⑦⑧⑨★◆';
-let charsAA = '';
+let charsAA = '█▇▆▅▄▃▂▁▀▔┄┅┈┉';
 let chars = charsA1 + charsA2 + charsA3 + charsA0 + charsAA;
 let re = new RegExp('[' + chars + ']', 'g');
 
