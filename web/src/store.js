@@ -1,6 +1,8 @@
 import { createStore } from 'vuex';
 import { Room } from './models';
 import { ParseGMCP } from './gmcp';
+import { AmbiguousReplace } from './utils/xterm-addon/AmbiguousReplace';
+
 import app from "./main";
 
 export const store = createStore({
@@ -15,7 +17,7 @@ export const store = createStore({
       lastPing: 0,
       pingTime: 0,
       gmcpOK: false,
-      settings: { lines: 100 },
+      settings: { userAmbiguousReplace: true, lines: 100 },
       gameTextHistory: [],
       gameText: "",
       allowGlobalHotkeys: true,
@@ -145,6 +147,9 @@ export const store = createStore({
       state.commandHistory.push(command);
     },
     ADD_GAME_TEXT: (state, text) => {
+      if (state.settings.userAmbiguousReplace) {
+        text = AmbiguousReplace(text);
+      }
       state.gameText = text;
     },
 

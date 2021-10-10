@@ -1,17 +1,17 @@
 <template>
   <div class="root" :style="{ height: containerHeight }">
-    <div class="scrollable-container" ref="mainTextContainer">
-    </div>
+    <div class="scrollable-container" ref="mainTextContainer" />
   </div>
 </template>
 
 <script>
 require("xterm/css/xterm.css");
 
-import {mapState} from 'vuex';
-import { Terminal } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
-import { Unicode11Addon } from 'xterm-addon-unicode11';
+import { mapState } from "vuex";
+import { Terminal } from "xterm";
+import { FitAddon } from "xterm-addon-fit";
+import { Unicode11Addon } from "xterm-addon-unicode11";
+import { UnicodeV11AddonAmbiguous } from "../utils/xterm-addon/UnicodeV11AddonAmbiguous";
 
 export default {
   name: "MainText",
@@ -26,7 +26,7 @@ export default {
     windowHeight: Number,
   },
   computed: {
-    ...mapState(['gameText', 'settings']),
+    ...mapState(["gameText", "settings"]),
     containerWidth() {
       const width = this.windowWidth;
       return `${width}px`;
@@ -40,18 +40,28 @@ export default {
     // @TODO:ambiguous character width
     // @see: https://github.com/xtermjs/xterm.js/issues/2668
     const term = new Terminal({
-      fontFamily: "'Noto Sans Mono CJK SC', 'PingFang SC', 'STHeitiSC-Light', SimHei, NSimSun, monospace",
+      fontFamily:
+        "'Noto Sans Mono CJK SC', 'PingFang SC', 'STHeitiSC-Light', SimHei, NSimSun, monospace",
       lineHeight: 1,
     });
-    this.terminal = term;
-    const unicode11Addon = new Unicode11Addon();
-    this.terminal.loadAddon(unicode11Addon);
-    this.terminal.unicode.activeVersion = '11';
+
+    if (this.$store.state.settings.userAmbiguousReplace) {
+      const unicode11Addon = new Unicode11Addon();
+      term.loadAddon(unicode11Addon);
+      term.unicode.activeVersion = "11";
+    } else {
+      const unicode11Addon = new UnicodeV11AddonAmbiguous();
+      term.loadAddon(unicode11Addon);
+      term.unicode.activeVersion = "11-ambiguous";
+    }
+
     const fitAddon = new FitAddon();
     this.fitAddon = fitAddon;
-    this.terminal.loadAddon(fitAddon);
-    this.terminal.open(this.$refs.mainTextContainer);
+    term.loadAddon(fitAddon);
+    term.open(this.$refs.mainTextContainer);
     fitAddon.fit();
+
+    this.terminal = term;
     this.fit();
   },
   watch: {
@@ -73,7 +83,7 @@ export default {
       const term = this.terminal;
       const fitAddon = this.fitAddon;
       term.element.style.display = "none";
-      setTimeout(function() {
+      setTimeout(function () {
         fitAddon.fit();
         term.element.style.display = "";
         term.refresh(0, term.rows - 1);
