@@ -17,7 +17,7 @@ export const store = createStore({
       lastPing: 0,
       pingTime: 0,
       gmcpOK: false,
-      settings: { useAmbiguousReplace: true, lines: 100 },
+      settings: { useAmbiguousReplace: false, lines: 100 },
       gameTextHistory: [],
       gameText: "",
       allowGlobalHotkeys: true,

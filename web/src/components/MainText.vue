@@ -37,36 +37,11 @@ export default {
     },
   },
   mounted() {
-    // @TODO:ambiguous character width
-    // @see: https://github.com/xtermjs/xterm.js/issues/2668
-    const term = new Terminal({
-      fontFamily:
-        "'Noto Sans Mono CJK SC', 'PingFang SC', 'STHeitiSC-Light', SimHei, NSimSun, monospace",
-      lineHeight: 1,
-    });
-
-    if (this.$store.state.settings.useAmbiguousReplace) {
-      const unicode11Addon = new Unicode11Addon();
-      term.loadAddon(unicode11Addon);
-      term.unicode.activeVersion = "11";
-    } else {
-      const unicode11Addon = new UnicodeV11AddonAmbiguous();
-      term.loadAddon(unicode11Addon);
-      term.unicode.activeVersion = "11-ambiguous";
-    }
-
-    const fitAddon = new FitAddon();
-    this.fitAddon = fitAddon;
-    term.loadAddon(fitAddon);
-    term.open(this.$refs.mainTextContainer);
-    fitAddon.fit();
-
-    this.terminal = term;
-    this.fit();
+    this.initTerminal();
   },
   watch: {
     gameText: function (msg) {
-      if (msg === "") {
+      if (msg === "" || !this.terminal) {
         return;
       }
       this.terminal.write(msg);
@@ -79,11 +54,39 @@ export default {
     },
   },
   methods: {
+    initTerminal() {
+      // @TODO:ambiguous character width
+      // @see: https://github.com/xtermjs/xterm.js/issues/2668
+      const term = new Terminal({
+        fontFamily: "'Noto Sans Mono CJK SC', 'PingFang SC', 'STHeitiSC-Light', SimHei, NSimSun, monospace",
+        lineHeight: 1,
+        rendererType: "dom",
+      });
+
+      if (this.$store.state.settings.useAmbiguousReplace) {
+        const unicode11Addon = new Unicode11Addon();
+        term.loadAddon(unicode11Addon);
+        term.unicode.activeVersion = "11";
+      } else {
+        const unicode11Addon = new UnicodeV11AddonAmbiguous();
+        term.loadAddon(unicode11Addon);
+        term.unicode.activeVersion = "11-ambiguous";
+      }
+
+      const fitAddon = new FitAddon();
+      this.fitAddon = fitAddon;
+      term.loadAddon(fitAddon);
+      term.open(this.$refs.mainTextContainer);
+      fitAddon.fit();
+
+      this.terminal = term;
+      this.fit();
+    },
     fit() {
       const term = this.terminal;
       const fitAddon = this.fitAddon;
       term.element.style.display = "none";
-      setTimeout(function () {
+      setTimeout(() => {
         fitAddon.fit();
         term.element.style.display = "";
         term.refresh(0, term.rows - 1);
