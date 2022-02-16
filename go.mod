@@ -3,7 +3,7 @@ module github.com/lostsnow/cloudrain
 go 1.17
 
 require (
-	github.com/gorilla/websocket v1.4.2
+	github.com/gorilla/websocket v1.5.0
 	github.com/labstack/echo/v4 v4.6.3
 	github.com/litsea/logger v1.0.0
 	github.com/spf13/cobra v1.1.3
