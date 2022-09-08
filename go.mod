@@ -8,7 +8,7 @@ require (
 	github.com/litsea/logger v1.0.0
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.13.0
-	go.uber.org/atomic v1.9.0
+	go.uber.org/atomic v1.10.0
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2
 	golang.org/x/text v0.3.7
 )
