@@ -6,15 +6,8 @@ Web MUD based on websocket proxy to telnet
 
 ### Web
 
-git subtree (for develop)
-
 ```
-git clone git@github.com:lostsnow/cloudrain.git
-git remote add -f web git@github.com:lostsnow/cloudrain-web.git
-
-git subtree add --prefix=web web master --squash
-git subtree pull --prefix=web web master --squash
-git subtree push --prefix=web web master
+git submodule update --recursive --remote
 ```
 
 build
