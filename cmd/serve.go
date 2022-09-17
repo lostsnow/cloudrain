@@ -49,6 +49,7 @@ const config = (() => {
 })();`, viper.GetString("websocket.scheme"), viper.GetString("websocket.host"),
 		viper.GetInt("websocket.port"), viper.GetString("websocket.path"))
 
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJavaScript)
 	return c.HTML(http.StatusOK, js)
 }
 
