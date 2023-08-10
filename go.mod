@@ -10,7 +10,7 @@ require (
 	github.com/spf13/viper v1.16.0
 	go.uber.org/atomic v1.11.0
 	golang.org/x/net v0.12.0
-	golang.org/x/text v0.11.0
+	golang.org/x/text v0.12.0
 )
 
 require (
