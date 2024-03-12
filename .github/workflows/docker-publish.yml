@@ -8,7 +8,7 @@ name: Docker
 on:
   push:
     branches: [ master ]
-    tags: [ 'v*.*' ]
+    tags: [ 'v*' ]
     paths-ignore:
       - 'docs/**'
   pull_request:
@@ -46,15 +46,10 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           # generate Docker tags based on the following events/attributes
           tags: |
-            latest
-            type=schedule
-            type=ref,event=branch
+            # set latest tag for master branch
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'master') }}
             type=ref,event=tag
             type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
 
       # Set up Docker Buildx
       # https://github.com/docker/setup-buildx-action
